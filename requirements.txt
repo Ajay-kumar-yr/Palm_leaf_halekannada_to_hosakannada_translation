@@ -1,0 +1,9 @@
+torch
+torchvision
+transformers
+gradio
+Pillow
+numpy
+sacrebleu
+tqdm
+pyyaml

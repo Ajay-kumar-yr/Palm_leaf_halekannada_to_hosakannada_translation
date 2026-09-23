@@ -7,3 +7,5 @@ numpy
 sacrebleu
 tqdm
 pyyaml
+uharfbuzz
+freetype-py

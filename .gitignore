@@ -6,8 +6,13 @@ runs/*/
 !runs/.gitkeep
 data/gold/*
 !data/gold/.gitkeep
-data/synthetic/*
-!data/synthetic/.gitkeep
+data/s1/*
+!data/s1/.gitkeep
+data/s2/*
+!data/s2/.gitkeep
+!data/s2/images/.gitkeep
+data/real/*
+!data/real/.gitkeep
 demo_pages/*
 !demo_pages/.gitkeep
 test_split/*

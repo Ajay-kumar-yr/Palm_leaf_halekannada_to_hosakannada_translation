@@ -39,10 +39,28 @@ def _warn_placeholder_once(real_dir: Path) -> None:
 
 
 def _list_real_images(real_dir: Path) -> list[Path]:
+    """Recursively find real HKHPL photos under `real_dir`.
+
+    The HKHPL drop nests photos several folders deep (e.g.
+    `dataset/Dataset/Dataset/{train,val,test}/`,
+    `dataset/hd_images/hd_images/`) rather than sitting flat in `real_dir`,
+    so this walks the whole tree. `Ground_Truth_images` is excluded: those
+    are pre-binarized single-channel outputs from the dataset's original
+    binarization benchmark, not photos, and using them as a texture/hole
+    source would defeat the point of conditioning on real leaf appearance
+    (and per CLAUDE.md, Palmira must only ever see the original photo, so
+    binarized crops shouldn't leak in here either).
+    """
     if not real_dir.exists():
         return []
     exts = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-    return [p for p in real_dir.iterdir() if p.suffix.lower() in exts]
+    return [
+        p
+        for p in real_dir.rglob("*")
+        if p.is_file()
+        and p.suffix.lower() in exts
+        and not any("ground_truth" in part.lower() for part in p.parts)
+    ]
 
 
 def _procedural_leaf_patch(size: tuple[int, int], rng: np.random.Generator) -> np.ndarray:

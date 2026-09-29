@@ -17,6 +17,9 @@ demo_pages/*
 !demo_pages/.gitkeep
 test_split/*
 !test_split/.gitkeep
+data/raw_corpus/*
+!data/raw_corpus/*.py
+data/modernizer_vocab.json
 *.ckpt
 *.pt
 *.pth

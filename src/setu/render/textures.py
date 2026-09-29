@@ -20,7 +20,15 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+# HKHPL source scans include some very large, high-resolution photos
+# (300+ megapixels) that trip PIL's decompression-bomb heuristic, which
+# exists to protect against untrusted/adversarial uploads. These are our
+# own local dataset files, not untrusted input, so the check is disabled
+# rather than raising DecompressionBombError mid-render.
+Image.MAX_IMAGE_PIXELS = None
+
 _WARNED = False
+_REAL_IMAGES_CACHE: dict[Path, list[Path]] = {}
 
 
 def _warn_placeholder_once(real_dir: Path) -> None:
@@ -51,16 +59,21 @@ def _list_real_images(real_dir: Path) -> list[Path]:
     (and per CLAUDE.md, Palmira must only ever see the original photo, so
     binarized crops shouldn't leak in here either).
     """
+    if real_dir in _REAL_IMAGES_CACHE:
+        return _REAL_IMAGES_CACHE[real_dir]
     if not real_dir.exists():
+        _REAL_IMAGES_CACHE[real_dir] = []
         return []
     exts = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-    return [
+    images = [
         p
         for p in real_dir.rglob("*")
         if p.is_file()
         and p.suffix.lower() in exts
         and not any("ground_truth" in part.lower() for part in p.parts)
     ]
+    _REAL_IMAGES_CACHE[real_dir] = images
+    return images
 
 
 def _procedural_leaf_patch(size: tuple[int, int], rng: np.random.Generator) -> np.ndarray:

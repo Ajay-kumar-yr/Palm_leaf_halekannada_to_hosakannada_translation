@@ -95,12 +95,24 @@ def generate_dataset(
 
             image_id = f"line_{idx:06d}"
             image_path = images_dir / f"{image_id}.png"
-            Image.fromarray(255 - damaged).save(image_path)  # ink dark-on-light for storage/viewing
+            # compose_damage's output is already ink-dark-on-light (real texture
+            # background, dark ink strokes) -- its own docstring says "ready to
+            # save". No further inversion here: a `255 - damaged` used to be
+            # applied on top, which flipped it to a bright-ink/dark-background
+            # negative on disk (harmless for training, since train.py's loader
+            # used to invert back -- but wrong for anything reading the PNG
+            # directly, and just confusing to look at).
+            Image.fromarray(damaged).save(image_path)
 
             record = {
                 "id": image_id,
                 "text": old_text,
-                "image_path": str(image_path.relative_to(out_dir)),
+                # .as_posix(), not str(): rendering runs on Windows (fonts.py needs a
+                # Windows font path) but training runs on WSL/Linux per CLAUDE.md --
+                # str() on Windows gives backslash separators, which Linux treats as a
+                # literal filename character rather than a path separator, so
+                # `data_dir / image_path` silently resolves to a nonexistent path.
+                "image_path": image_path.relative_to(out_dir).as_posix(),
                 "font": font.name,
                 "pixel_size": pixel_size,
                 "damage": vars(params),

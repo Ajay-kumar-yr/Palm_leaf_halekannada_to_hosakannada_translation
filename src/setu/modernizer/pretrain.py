@@ -135,6 +135,17 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--val-batches", type=int, default=50)
+    parser.add_argument(
+        "--resume-from", type=Path, default=None,
+        help="a best_model.pt checkpoint to load model weights from before training "
+             "(optimizer state is not saved/resumed -- Adam restarts fresh, a minor "
+             "imperfection but not worth checkpointing optimizer state for this scale)",
+    )
+    parser.add_argument(
+        "--start-epoch", type=int, default=1,
+        help="epoch number to label the first epoch of this run as, for continuity "
+             "in logs/history when resuming (e.g. 2 if epoch 1 already ran)",
+    )
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)  # CLAUDE.md rule 6
@@ -153,6 +164,10 @@ def main() -> None:
     model = Modernizer(len(vocab), vocab.pad_id, vocab.bos_id, vocab.eos_id).to(device)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Modernizer parameters: {n_params:,}")
+
+    if args.resume_from is not None:
+        model.load_state_dict(torch.load(args.resume_from, map_location=device))
+        print(f"Resumed weights from {args.resume_from}")
 
     ce_loss = nn.CrossEntropyLoss(ignore_index=vocab.pad_id)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
@@ -181,12 +196,15 @@ def main() -> None:
             "lr": args.lr,
             "device": str(device),
             "n_params": n_params,
+            "resume_from": str(args.resume_from) if args.resume_from else None,
+            "start_epoch": args.start_epoch,
         },
     )
 
     history = []
     best_val_loss = float("inf")
-    for epoch in range(1, args.epochs + 1):
+    end_epoch = args.start_epoch + args.epochs - 1
+    for epoch in range(args.start_epoch, end_epoch + 1):
         epoch_start = time.time()
         model.train()
         total_loss, total_acc, n_batches = 0.0, 0.0, 0
@@ -210,7 +228,7 @@ def main() -> None:
         epoch_time = time.time() - epoch_start
 
         print(
-            f"epoch {epoch:3d}/{args.epochs}  train_loss {train_loss:.4f} train_char_acc {train_acc:.4f}  "
+            f"epoch {epoch:3d}/{end_epoch}  train_loss {train_loss:.4f} train_char_acc {train_acc:.4f}  "
             f"val_loss {val_loss:.4f} val_char_acc {val_acc:.4f}  ({epoch_time:.1f}s)"
         )
         history.append(

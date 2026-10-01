@@ -48,37 +48,75 @@ def _load_manifest(manifest_path: Path) -> list[dict]:
     return records
 
 
-def _split_train_val(records: list[dict], val_fraction: float) -> tuple[list[dict], list[dict]]:
+def _split_train_val_indices(records: list[dict], val_fraction: float) -> tuple[list[int], list[int]]:
     """Deterministic hash-of-id split -- same rationale as CLAUDE.md rule 2
-    for S2/gold: stable regardless of manifest ordering or future growth."""
+    for S2/gold: stable regardless of manifest ordering or future growth.
+    Returns indices (not records) so callers can slice parallel arrays
+    (e.g. pre-scanned image dimensions) consistently with the split."""
     threshold = int(val_fraction * 256)
-    train, val = [], []
-    for rec in records:
+    train_idx, val_idx = [], []
+    for i, rec in enumerate(records):
         digest = hashlib.sha256(f"s1:{rec['id']}".encode("utf-8")).digest()
-        (val if digest[0] < threshold else train).append(rec)
-    return train, val
+        (val_idx if digest[0] < threshold else train_idx).append(i)
+    return train_idx, val_idx
 
 
-class LengthBucketBatchSampler(Sampler[list[int]]):
-    """Rendered line width varies enormously with verse length (measured:
-    1,350px to 25,216px in this corpus) -- batching random lines together
-    pads every image in a batch up to the widest one, which for an unlucky
-    batch containing one of the longest verses tries to allocate tens of
-    GB. Sorting by text length (a cheap, already-available proxy for
-    rendered width -- both scale with character count for a fixed
-    pixel-size range) before chunking into batches keeps each batch's
-    images close in width, bounding padding waste to local variance
-    instead of the whole dataset's spread. Batch ORDER is still shuffled
-    each epoch so training isn't biased toward seeing short-then-long."""
+def scan_image_dims(records: list[dict], data_dir: Path) -> list[tuple[int, int]]:
+    """(height, width) per record via a PIL header read (lazy -- .size
+    reads only the image header, not the full pixel data, so this is
+    much cheaper than opening every image fully). Needed because text
+    length is NOT a reliable proxy for rendered pixel area: height varies
+    independently of character count (damage.py's skew rotation uses
+    PIL's expand=True, and the skew angle is random per line, so two
+    lines of the same length can differ 2-3x in height). Measured: a
+    single 700-char, heavily-skewed line was 924x14561px and used 3.3GB
+    for a forward pass ALONE on this 4GB GPU -- char-length-based
+    batching cannot see that coming, only actual pixel dimensions can."""
+    dims = []
+    for rec in records:
+        rel_path = rec["image_path"].replace("\\", "/")
+        with Image.open(data_dir / rel_path) as im:
+            w, h = im.size
+        dims.append((h, w))
+    return dims
 
-    def __init__(self, records: list[dict], batch_size: int, seed: int, drop_last: bool):
-        self.batch_size = batch_size
-        self.drop_last = drop_last
+
+class AreaBucketBatchSampler(Sampler[list[int]]):
+    """Bounds batch_size * (max_height_in_batch * max_width_in_batch) --
+    actual padded pixel area, not a text-length proxy -- to a fixed
+    budget calibrated against measured GPU memory (see scan_image_dims).
+    Short/short lines get large batches, huge images get batches of 1;
+    images whose OWN area already exceeds the budget are excluded
+    entirely by the caller (no batch size can make them fit). Sorts by
+    area so within-batch padding waste stays low; batch ORDER is
+    shuffled each epoch so training isn't biased toward seeing
+    short-then-long."""
+
+    def __init__(
+        self, indices: list[int], dims: list[tuple[int, int]], max_pixels_per_batch: int, seed: int,
+        max_batch_size: int = 64, drop_last: bool = False,
+    ):
         self.rng = np.random.default_rng(seed)
-        order = sorted(range(len(records)), key=lambda i: len(records[i]["text"]))
-        self.batches = [order[i : i + batch_size] for i in range(0, len(order), batch_size)]
-        if drop_last and self.batches and len(self.batches[-1]) < batch_size:
-            self.batches.pop()
+        order = sorted(indices, key=lambda i: dims[i][0] * dims[i][1])
+
+        batches: list[list[int]] = []
+        current: list[int] = []
+        current_max_h, current_max_w = 0, 0
+        for idx in order:
+            h, w = dims[idx]
+            prospective_h, prospective_w = max(current_max_h, h), max(current_max_w, w)
+            prospective_area = prospective_h * prospective_w
+            would_exceed_budget = current and (len(current) + 1) * prospective_area > max_pixels_per_batch
+            would_exceed_size = len(current) >= max_batch_size
+            if current and (would_exceed_budget or would_exceed_size):
+                batches.append(current)
+                current, current_max_h, current_max_w = [idx], h, w
+            else:
+                current.append(idx)
+                current_max_h, current_max_w = prospective_h, prospective_w
+        if current and not (drop_last and len(current) < 2):
+            batches.append(current)
+        self.batches = batches
 
     def __iter__(self):
         order = self.rng.permutation(len(self.batches))
@@ -167,16 +205,27 @@ def main() -> None:
     parser.add_argument("--val-fraction", type=float, default=0.05)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--epochs", type=int, default=15)
-    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument(
+        "--max-pixels-per-batch", type=int, default=2_200_000,
+        help="bounds batch_size * (max_height_in_batch * max_width_in_batch) -- actual padded "
+             "pixel area. See AreaBucketBatchSampler.",
+    )
+    parser.add_argument(
+        "--max-single-image-pixels", type=int, default=1_500_000,
+        help="images above this are dropped from training, not just batched differently. "
+             "Measured on this GPU: per-step time is well-behaved (~0.2-0.3s) up to ~1.9M px, "
+             "then spikes non-linearly (one 3.8M px / 450px-tall image took 3.5s/step, a 13x "
+             "jump for 2x the pixels -- the CRNN's later conv blocks don't reduce width "
+             "further, so very wide+tall images get disproportionately expensive, not just "
+             "memory-heavy). 1.5M keeps 75%% of S1 (17,505/23,346 lines) at consistent speed --"
+             " chasing the remaining 25%% cost far more in unpredictable slowdowns than it was "
+             "worth for a project that doesn't need the absolute max training set size.",
+    )
+    parser.add_argument("--max-batch-size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--val-batches", type=int, default=40, help="cap validation batches per epoch for speed")
     parser.add_argument("--max-lines-per-epoch", type=int, default=None, help="debug: cap train examples/epoch")
-    parser.add_argument(
-        "--max-text-chars", type=int, default=1500,
-        help="drop lines longer than this (p99 of S1 is ~1460 chars; the max is 8539 -- a single "
-             "outlier verse rendered as one very wide line risks OOM even with length bucketing)",
-    )
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)  # CLAUDE.md rule 6
@@ -186,14 +235,24 @@ def main() -> None:
 
     records = _load_manifest(args.manifest)
     n_before = len(records)
-    records = [r for r in records if len(r["text"]) <= args.max_text_chars]
-    n_dropped_long = n_before - len(records)
-    train_records, val_records = _split_train_val(records, args.val_fraction)
+    print(f"Scanning image dimensions for {n_before} lines (one-time pass, header-only reads)...")
+    dims_all = scan_image_dims(records, args.data_dir)
+    keep = [i for i, (h, w) in enumerate(dims_all) if h * w <= args.max_single_image_pixels]
+    n_dropped_huge = n_before - len(keep)
+    records = [records[i] for i in keep]
+    dims_all = [dims_all[i] for i in keep]
+
+    train_idx, val_idx = _split_train_val_indices(records, args.val_fraction)
+    train_records = [records[i] for i in train_idx]
+    val_records = [records[i] for i in val_idx]
+    train_dims = [dims_all[i] for i in train_idx]
+    val_dims = [dims_all[i] for i in val_idx]
     if args.max_lines_per_epoch is not None:
         train_records = train_records[: args.max_lines_per_epoch]
+        train_dims = train_dims[: args.max_lines_per_epoch]
     print(
-        f"S1: {n_before} lines total ({n_dropped_long} dropped, longer than "
-        f"{args.max_text_chars} chars) -> {len(train_records)} train, {len(val_records)} val (device={device})"
+        f"S1: {n_before} lines total ({n_dropped_huge} dropped, over "
+        f"{args.max_single_image_pixels:,} px) -> {len(train_records)} train, {len(val_records)} val (device={device})"
     )
 
     model = CRNN().to(device)
@@ -206,8 +265,14 @@ def main() -> None:
     train_ds = S1Dataset(train_records, args.data_dir, augment=True, seed=args.seed)
     val_ds = S1Dataset(val_records, args.data_dir, augment=False, seed=args.seed)
 
-    train_sampler = LengthBucketBatchSampler(train_records, args.batch_size, seed=args.seed, drop_last=True)
-    val_sampler = LengthBucketBatchSampler(val_records, args.batch_size, seed=args.seed, drop_last=False)
+    train_sampler = AreaBucketBatchSampler(
+        list(range(len(train_records))), train_dims, args.max_pixels_per_batch, seed=args.seed,
+        max_batch_size=args.max_batch_size, drop_last=True,
+    )
+    val_sampler = AreaBucketBatchSampler(
+        list(range(len(val_records))), val_dims, args.max_pixels_per_batch, seed=args.seed,
+        max_batch_size=args.max_batch_size, drop_last=False,
+    )
     train_loader = DataLoader(
         train_ds, batch_sampler=train_sampler, num_workers=args.num_workers, collate_fn=collate,
     )
@@ -220,13 +285,14 @@ def main() -> None:
         {
             "seed": args.seed,
             "manifest": str(args.manifest),
-            "max_text_chars": args.max_text_chars,
-            "n_dropped_long": n_dropped_long,
+            "max_single_image_pixels": args.max_single_image_pixels,
+            "n_dropped_huge": n_dropped_huge,
             "n_train": len(train_records),
             "n_val": len(val_records),
             "val_fraction": args.val_fraction,
             "epochs": args.epochs,
-            "batch_size": args.batch_size,
+            "max_pixels_per_batch": args.max_pixels_per_batch,
+            "max_batch_size": args.max_batch_size,
             "lr": args.lr,
             "device": str(device),
             "n_params": n_params,

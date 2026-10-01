@@ -26,7 +26,7 @@ import numpy as np
 from PIL import Image
 
 from setu.render.damage import compose_damage
-from setu.render.fonts import require_fonts
+from setu.render.fonts import glyph_fallback_font, require_fonts
 from setu.render.rasterize import render_clean_line
 
 
@@ -71,10 +71,20 @@ def generate_dataset(
 
             clean, missing = render_clean_line(old_text, font, pixel_size, line_height)
             if missing:
-                # A font missing a glyph for this line's text is exactly
-                # the silent-failure mode this project is built to avoid
-                # (see CLAUDE.md: archaic letters sit in the rare tail).
-                # Skip the line rather than render it wrong, and record why.
+                # The preferred font is missing a glyph this line needs (e.g.
+                # Navilu has no danda/double-danda) -- try the glyph-coverage
+                # fallback font before giving up. Silently dropping ~15% of
+                # the corpus (every line using verse-boundary dandas) would
+                # be exactly the kind of rare-but-real-usage data loss
+                # CLAUDE.md is built to avoid for archaic letters generally.
+                fallback = glyph_fallback_font()
+                if fallback is not None and fallback.path != font.path:
+                    font = fallback
+                    clean, missing = render_clean_line(old_text, font, pixel_size, line_height)
+
+            if missing:
+                # Still missing even on the fallback -- now it's a genuine
+                # skip, not a silent failure: skip the line and record why.
                 n_skipped += 1
                 manifest_f.write(
                     json.dumps(

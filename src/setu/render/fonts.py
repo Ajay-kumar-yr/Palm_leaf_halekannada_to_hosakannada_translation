@@ -23,26 +23,60 @@ class FontSpec:
     licence_note: str
 
 
-# Windows ships Nirmala UI with full Indic script coverage. It is not an
-# open-licence font — fine for local development and internal reports, but
-# it must NOT ship as a redistributed asset (e.g. baked into a demo
-# checkpoint or included as a repo file) without checking Microsoft's font
-# EULA first. Treat this as a placeholder until Noto Sans Kannada / Tunga /
-# other explicitly-licensed Kannada fonts are added — see the "Ask before"
-# rule in CLAUDE.md for adding new font assets.
+# Navilu (S.P. Aravinda, SIL Open Font License 1.1 -- freely usable and
+# redistributable, unlike Nirmala below) is a genuine handwriting-style
+# Kannada font, not a UI/print font -- verified to cover both archaic
+# letters (ಱ, ೞ) and all but 2 of the 65 WX-scheme characters (candrabindu
+# and avagraha, both absent from the S1 corpus anyway). This replaced
+# Nirmala UI as the only font after visual comparison through the full
+# damage pipeline showed Nirmala's uniform, geometrically clean letterforms
+# read as "typed text pasted on a photo" rather than inscribed writing --
+# see data/external_models/fonts/navilu/PROVENANCE.md.
+#
+# Nirmala UI is kept registered but unused by default: it's a Windows
+# system font, not an open licence -- fine for local dev, but must NOT
+# ship as a redistributed asset (e.g. baked into a demo checkpoint or
+# committed as a repo file) without checking Microsoft's font EULA. See
+# the "Ask before" rule in CLAUDE.md for adding new font assets.
 _CANDIDATES = [
     FontSpec(
-        name="Nirmala UI",
-        path=r"C:\Windows\Fonts\Nirmala.ttc",
+        name="Navilu",
+        path="data/external_models/fonts/navilu/Navilu.ttf",
         face_index=0,
-        licence_note="Microsoft system font — dev/local use only, do not redistribute.",
+        licence_note="SIL Open Font License 1.1 -- freely usable and redistributable.",
     ),
 ]
 
+_NIRMALA_FALLBACK = FontSpec(
+    name="Nirmala UI",
+    path=r"C:\Windows\Fonts\Nirmala.ttc",
+    face_index=0,
+    licence_note="Microsoft system font — dev/local use only, do not redistribute.",
+)
+
 
 def available_fonts() -> list[FontSpec]:
-    """Return the FontSpecs whose font file actually exists on disk."""
-    return [f for f in _CANDIDATES if Path(f.path).exists()]
+    """Return the FontSpecs whose font file actually exists on disk. Falls
+    back to Nirmala UI only if Navilu itself is missing (e.g. not yet
+    downloaded on this machine) -- rendering should never silently produce
+    zero fonts just because the preferred one isn't present yet."""
+    found = [f for f in _CANDIDATES if Path(f.path).exists()]
+    if not found and Path(_NIRMALA_FALLBACK.path).exists():
+        return [_NIRMALA_FALLBACK]
+    return found
+
+
+def glyph_fallback_font() -> FontSpec | None:
+    """Navilu (549 glyphs) is missing danda/double-danda (।॥) -- real,
+    common verse-boundary marks in old-Kannada poetry, affecting ~15% of
+    the S1 corpus. Rather than silently dropping that much data (and
+    disproportionately dropping the more traditional/liturgical verses
+    that use dandas), the caller should retry a line that fails on the
+    preferred font with this one before giving up. Nirmala UI has full
+    coverage; a per-line font fallback is a small, deliberate compromise,
+    not a silent inconsistency -- generate.py records which font was
+    actually used per line in the manifest."""
+    return _NIRMALA_FALLBACK if Path(_NIRMALA_FALLBACK.path).exists() else None
 
 
 def require_fonts() -> list[FontSpec]:

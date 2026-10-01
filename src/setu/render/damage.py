@@ -1,9 +1,19 @@
-"""The five damage effects baked into S1/S2 images at generation time
-(roadmap v4 §2.2): background texture, ink bleed, page warp, baseline
-skew, holes and damage. These are the "slow, generate once" effects —
-the cheap on-the-fly ones (rotation, brightness, blur, stretch) applied
-fresh every time an image is used during training live in `augment.py`,
-not here.
+"""The damage effects baked into S1/S2 images at generation time (roadmap
+v4 §2.2): stroke distortion, background texture, ink bleed, page warp,
+baseline skew, holes and damage. These are the "slow, generate once"
+effects — the cheap on-the-fly ones (rotation, brightness, blur, stretch)
+applied fresh every time an image is used during training live in
+`augment.py`, not here.
+
+Stroke distortion was added after the fact (not one of the original five)
+because a vector-font glyph's perfectly uniform, geometrically clean
+outline is what makes a rendered line read as "typed text pasted onto a
+photo" rather than hand-inscribed writing -- no amount of background/ink
+compositing trickery fixes that if the strokes themselves are still
+mechanically perfect. It's a smooth per-glyph elastic warp, deliberately
+gentler than a from-scratch handwriting synthesis effort (that's out of
+scope, same reasoning as the roadmap's already-cut effects) but enough to
+break the too-perfect look while staying legible.
 
 Everything in this module operates on a grayscale "ink mask" array
 (uint8, 0 = no ink, 255 = full ink) as produced by
@@ -29,6 +39,8 @@ class DamageParams:
     reproducible and so a reviewer can see exactly what was applied
     (CLAUDE.md rule 4: a result without its config does not exist)."""
 
+    distortion_max_px: float
+    distortion_grid_px: int
     skew_degrees: float
     bleed_radius: float
     bleed_smear_px: int
@@ -37,6 +49,47 @@ class DamageParams:
     texture_is_real: bool
     hole_count: int
     hole_is_real: list[bool] = field(default_factory=list)
+
+
+def apply_stroke_distortion(
+    ink: np.ndarray, rng: np.random.Generator, max_disp_px: float = 0.35, grid_spacing_px: int = 10
+) -> tuple[np.ndarray, float, int]:
+    """Smooth elastic warp of the glyph shapes themselves, applied before
+    any line-level transform. A coarse grid of random per-control-point
+    displacements is bicubic-upsampled to a full per-pixel (dy, dx) field
+    -- smooth because it's an upsample of a sparse grid, not per-pixel
+    noise, which is what keeps whole letters coherent instead of
+    shredding them. Bilinear resampling (manual, matching the style of
+    apply_page_warp below -- no scipy dependency).
+
+    Both parameters were tuned empirically against the full pipeline (this
+    function's effect compounds with skew/bleed/warp downstream, so
+    tuning it in isolation is misleading): grid_spacing_px much below ~9
+    lets independent random offsets land within a single glyph's height
+    and tears letters apart; max_disp_px much above ~0.4 becomes
+    illegible once skew and page-warp stack on top of it.
+    """
+    h, w = ink.shape
+    gh, gw = h // grid_spacing_px + 2, w // grid_spacing_px + 2
+    dy_coarse = rng.uniform(-max_disp_px, max_disp_px, size=(gh, gw)).astype(np.float32)
+    dx_coarse = rng.uniform(-max_disp_px, max_disp_px, size=(gh, gw)).astype(np.float32)
+    dy = np.array(Image.fromarray(dy_coarse).resize((w, h), Image.BICUBIC), dtype=np.float32)
+    dx = np.array(Image.fromarray(dx_coarse).resize((w, h), Image.BICUBIC), dtype=np.float32)
+
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    src_y, src_x = yy + dy, xx + dx
+    y0 = np.clip(np.floor(src_y).astype(int), 0, h - 1)
+    y1 = np.clip(y0 + 1, 0, h - 1)
+    x0 = np.clip(np.floor(src_x).astype(int), 0, w - 1)
+    x1 = np.clip(x0 + 1, 0, w - 1)
+    fy = np.clip(src_y - y0, 0, 1)
+    fx = np.clip(src_x - x0, 0, 1)
+
+    ink_f = ink.astype(np.float32)
+    top = ink_f[y0, x0] * (1 - fx) + ink_f[y0, x1] * fx
+    bot = ink_f[y1, x0] * (1 - fx) + ink_f[y1, x1] * fx
+    distorted = np.clip(top * (1 - fy) + bot * fy, 0, 255).astype(np.uint8)
+    return distorted, max_disp_px, grid_spacing_px
 
 
 def apply_baseline_skew(ink: np.ndarray, rng: np.random.Generator, max_degrees: float = 4.0) -> tuple[np.ndarray, float]:
@@ -115,12 +168,19 @@ def apply_background_and_holes(
     h, w = ink.shape
     bg, bg_is_real = sample_patch(real_dir, (h, w), rng)
 
-    # Ink drawn as darker-than-background strokes (palm-leaf styli
-    # traditionally darken the leaf, e.g. via lampblack rubbed into
-    # incised grooves) — alpha-blend by ink intensity.
+    # Ink darkens the LOCAL background multiplicatively rather than
+    # replacing it with a flat value -- a flat replace (bg*(1-alpha) +
+    # 40*alpha) makes every stroke read as a uniform overlay pasted on top
+    # of the leaf, ignoring whatever grain/shading/staining is already at
+    # that pixel. Real stylus-incised writing follows the leaf's surface:
+    # ink pools darker in a locally rough/stained patch, lighter on a
+    # locally clean one, so the same grain visible in the bare background
+    # should still be visible faintly through the strokes. Multiplying by
+    # a retained-brightness factor (rather than an additive/replace blend)
+    # keeps that per-pixel texture proportional through the ink.
     alpha = (ink.astype(np.float32) / 255.0)[..., None]
-    ink_color = 40.0  # dark stroke value
-    composed = bg.astype(np.float32)[..., None] * (1 - alpha) + ink_color * alpha
+    ink_retained_brightness = 0.15  # fraction of local bg value kept where fully inked
+    composed = bg.astype(np.float32)[..., None] * (1 - alpha * (1 - ink_retained_brightness))
     composed = composed[..., 0]
 
     n_holes = int(rng.integers(0, max_holes + 1))
@@ -150,14 +210,17 @@ def apply_background_and_holes(
 def compose_damage(
     ink: np.ndarray, rng: np.random.Generator, real_dir: Path
 ) -> tuple[np.ndarray, DamageParams]:
-    """Run all five baked-in damage effects in order and return the final
-    image plus the parameters used, for the manifest."""
-    skewed, skew_deg = apply_baseline_skew(ink, rng)
+    """Run all baked-in damage effects in order and return the final image
+    plus the parameters used, for the manifest."""
+    distorted, dist_max, dist_grid = apply_stroke_distortion(ink, rng)
+    skewed, skew_deg = apply_baseline_skew(distorted, rng)
     bled, bleed_radius, smear_px = apply_ink_bleed(skewed, rng)
     warped, warp_amp, warp_wl = apply_page_warp(bled, rng)
     final, bg_real, n_holes, hole_real = apply_background_and_holes(warped, rng, real_dir)
 
     params = DamageParams(
+        distortion_max_px=dist_max,
+        distortion_grid_px=dist_grid,
         skew_degrees=skew_deg,
         bleed_radius=bleed_radius,
         bleed_smear_px=smear_px,

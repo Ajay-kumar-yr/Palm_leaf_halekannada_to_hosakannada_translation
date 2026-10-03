@@ -85,8 +85,19 @@ class Modernizer(nn.Module):
         self.output_proj = nn.Linear(HIDDEN, output_vocab_size)
 
     def encode(self, src_ids: torch.Tensor, src_key_padding_mask: torch.Tensor) -> torch.Tensor:
-        """src_ids: (T_src, B) -> memory: (T_src, B, hidden)."""
-        x = self.pos_embed(self.src_embed(src_ids) * self._embed_scale)
+        """src_ids: (T_src, B) -> memory: (T_src, B, hidden). The B3 (argmax)
+        path: a single discrete WX symbol per frame, looked up in src_embed."""
+        return self.encode_embeds(self.src_embed(src_ids), src_key_padding_mask)
+
+    def encode_embeds(self, src_embeds: torch.Tensor, src_key_padding_mask: torch.Tensor) -> torch.Tensor:
+        """src_embeds: (T_src, B, hidden), already-looked-up or already-blended
+        -> memory: (T_src, B, hidden). The B4 (soft bridge) path plugs in here
+        directly with confidence-blended embeddings (setu.bridge.soft_bridge)
+        instead of a single discrete symbol's lookup -- same encoder either
+        way, only what feeds it differs, per CLAUDE.md: "same recogniser, same
+        data, same modernizer training procedure -- only the interface
+        differs" between B3 and B4."""
+        x = self.pos_embed(src_embeds * self._embed_scale)
         return self.encoder(x, src_key_padding_mask=src_key_padding_mask)
 
     def decode(

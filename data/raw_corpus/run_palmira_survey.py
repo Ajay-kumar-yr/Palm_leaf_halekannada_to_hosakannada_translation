@@ -103,14 +103,32 @@ def main() -> None:
             t0 = time.time()
             device_used = "cuda"
             try:
-                predictions, vis_output = demo_gpu.run_on_image(img)
-            except torch.cuda.OutOfMemoryError:
+                try:
+                    predictions, vis_output = demo_gpu.run_on_image(img)
+                except RuntimeError as e:
+                    # This torch build (python3.7, pinned for the DefGrid CUDA
+                    # extension) predates torch.cuda.OutOfMemoryError as a
+                    # distinct class -- OOM surfaces as a plain RuntimeError
+                    # with "out of memory" in the message, so match on that
+                    # instead of the exception type.
+                    if "out of memory" not in str(e).lower():
+                        raise
+                    torch.cuda.empty_cache()
+                    if demo_cpu is None:
+                        print("  GPU OOM -- building CPU predictor (first fallback, one-time cost)")
+                        demo_cpu = VisualizationDemo(build_cfg("cpu"))
+                    device_used = "cpu"
+                    predictions, vis_output = demo_cpu.run_on_image(img)
+            except Exception as e:
+                # A genuine model-internal bug (e.g. a reshape error when the
+                # detector finds zero candidate regions on some image) must
+                # not kill the whole batch over one page -- Palmira is used
+                # exactly as downloaded, no fine-tuning, so the fix belongs
+                # here (skip and record), not inside its own model code.
+                f_out.write(json.dumps({"path": rel, "error": f"inference failed: {e}"}) + "\n")
+                f_out.flush()
                 torch.cuda.empty_cache()
-                if demo_cpu is None:
-                    print("  GPU OOM -- building CPU predictor (first fallback, one-time cost)")
-                    demo_cpu = VisualizationDemo(build_cfg("cpu"))
-                device_used = "cpu"
-                predictions, vis_output = demo_cpu.run_on_image(img)
+                continue
             elapsed = time.time() - t0
 
             instances = predictions.get("instances")

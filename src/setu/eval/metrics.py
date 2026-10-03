@@ -1,14 +1,19 @@
 """The single source of truth for evaluation metrics (CLAUDE.md rule 5:
 metrics are computed ONLY here -- never inline, never invented elsewhere).
 
-Only edit_distance/CER are implemented so far, needed by the recogniser's
-8-example memorisation sanity check (CLAUDE.md rule 3). chrF++, BLEU, and
-POS accuracy are added in Week 3/4 when B0/B3/B4 are actually compared.
+edit_distance/CER (needed by the recogniser's 8-example memorisation
+sanity check, CLAUDE.md rule 3) plus chrF++ and BLEU for the B0/B3/B4
+modernization comparison. POS accuracy is added separately in Week 4
+(hand-checked tagging, not a metric computed over model output the same
+way).
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Sequence, TypeVar
+
+import sacrebleu
 
 T = TypeVar("T")
 
@@ -46,3 +51,47 @@ def cer(ref: Sequence[T], hyp: Sequence[T]) -> float:
     if len(ref) == 0:
         return 0.0 if len(hyp) == 0 else float(len(hyp))
     return edit_distance(ref, hyp) / len(ref)
+
+
+@dataclass(frozen=True)
+class CorpusScore:
+    score: float
+    detail: str  # the library's own human-readable breakdown, for the report/appendix
+
+
+def chrf_plus_plus(hyps: list[str], refs: list[str]) -> CorpusScore:
+    """chrF++ (CLAUDE.md: the PRIMARY modernization metric) -- character
+    n-gram F-score plus word unigram/bigram F-score (word_order=2 is the
+    standard definition of "chrF++" as opposed to plain chrF). Corpus-level
+    (one score over the whole test split via sacrebleu's corpus_score, not
+    an average of per-line scores -- the standard way to report this, and
+    not equivalent to averaging individual sentence scores).
+
+    hyps/refs are plain strings (whole lines), not pre-tokenized sequences
+    -- chrF operates on characters directly and sacrebleu handles its own
+    internal word-boundary splitting for the word-order component.
+    """
+    if len(hyps) != len(refs):
+        raise ValueError(f"hyps and refs must be the same length, got {len(hyps)} and {len(refs)}")
+    result = sacrebleu.CHRF(word_order=2).corpus_score(hyps, [refs])
+    return CorpusScore(score=result.score, detail=str(result))
+
+
+def bleu(hyps: list[str], refs: list[str]) -> CorpusScore:
+    """BLEU (CLAUDE.md: SECONDARY -- "BLEU alone is misleading here: plain
+    copying already scores well given vocabulary overlap, and the
+    patent's reported 0.81 should be read with that in mind"). Corpus-
+    level via sacrebleu with its standard tokenizer and smoothing
+    defaults, for comparability with how BLEU is normally reported.
+
+    Note on short lines: BLEU's standard 4-gram geometric mean can read 0
+    for very short sentences (a line under 4 words has no 4-grams to
+    match at all, independent of translation quality) -- expected
+    behaviour of the metric, not a bug here, and part of why CLAUDE.md
+    treats chrF++ as primary rather than fixing this with a different
+    smoothing method unasked.
+    """
+    if len(hyps) != len(refs):
+        raise ValueError(f"hyps and refs must be the same length, got {len(hyps)} and {len(refs)}")
+    result = sacrebleu.BLEU().corpus_score(hyps, [refs])
+    return CorpusScore(score=result.score, detail=str(result))

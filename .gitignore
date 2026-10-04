@@ -24,3 +24,4 @@ data/modernizer_vocab.json
 *.pt
 *.pth
 .DS_Store
+transfer_to_3060/

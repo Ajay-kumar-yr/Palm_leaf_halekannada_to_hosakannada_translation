@@ -20,7 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path("D:/major_proj/Palm_leaf_halekannada_to_hosakannada_translation")
+ROOT = Path(__file__).resolve().parents[2]
 S2_CORPUS = ROOT / "data/raw_corpus/s2_corpus.txt"  # verse_id\told_text\tmodern_text
 TEST_IDS_PATH = ROOT / "data/splits/s2_test_verse_ids.txt"
 OUT_RENDER = ROOT / "data/raw_corpus/s2_corpus_render.txt"

@@ -25,3 +25,4 @@ data/modernizer_vocab.json
 *.pth
 .DS_Store
 transfer_to_3060/
+modrenizer_s3_pretrain/

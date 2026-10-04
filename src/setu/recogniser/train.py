@@ -22,8 +22,22 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import time
 from pathlib import Path
+
+# Must be set before torch's CUDA allocator initializes (first `import torch`
+# touching cuda). S1's images vary enormously in width/height, so batches hit
+# a huge range of padded tensor shapes; PyTorch's default allocator caches a
+# separate block per distinct size it has ever seen and never coalesces them,
+# so GPU memory.used (as reported by nvidia-smi) ratchets upward through an
+# epoch independent of --max-pixels-per-batch -- measured climbing from ~5GB
+# to ~12GB/12GB (RTX 3060) with no new training-loop output in between, i.e.
+# no single batch got bigger, the allocator's reserved pool just kept
+# growing. expandable_segments lets the allocator grow/shrink existing
+# segments instead of hoarding one per size, which is exactly this failure
+# mode's documented fix. setdefault so an operator's own env setting wins.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import numpy as np
 import torch
@@ -206,26 +220,53 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--epochs", type=int, default=15)
     parser.add_argument(
-        "--max-pixels-per-batch", type=int, default=2_200_000,
+        "--max-pixels-per-batch", type=int, default=3_000_000,
         help="bounds batch_size * (max_height_in_batch * max_width_in_batch) -- actual padded "
-             "pixel area. See AreaBucketBatchSampler.",
+             "pixel area. See AreaBucketBatchSampler. NOTE: a single-image (batch_size=1) "
+             "profiling pass (varying h*w, see HANDOFF.md Step 5) suggested 6M was safe on an "
+             "RTX 3060 12GB, extrapolating memory as linear in total padded pixels -- that "
+             "extrapolation was wrong in practice: cuDNN's algorithm/workspace selection for "
+             "real multi-image batch *shapes* is not simply a function of total element count, "
+             "and 6M drove memory.used to the 12GB ceiling within one epoch (recovered from an "
+             "OOM warning, then degraded to >150s/batch instead of crashing). 3M was verified "
+             "end-to-end: a full epoch (21,272 train lines, RTX 3060 12GB, with "
+             "PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True also set, see top of file) "
+             "peaked at ~5GB and completed in 2654s (~44min) with 0 batches skipped. "
+             "Re-measure on any other GPU; don't just scale this number by VRAM ratio.",
     )
     parser.add_argument(
-        "--max-single-image-pixels", type=int, default=1_500_000,
+        "--max-single-image-pixels", type=int, default=5_000_000,
         help="images above this are dropped from training, not just batched differently. "
-             "Measured on this GPU: per-step time is well-behaved (~0.2-0.3s) up to ~1.9M px, "
-             "then spikes non-linearly (one 3.8M px / 450px-tall image took 3.5s/step, a 13x "
-             "jump for 2x the pixels -- the CRNN's later conv blocks don't reduce width "
-             "further, so very wide+tall images get disproportionately expensive, not just "
-             "memory-heavy). 1.5M keeps 75%% of S1 (17,505/23,346 lines) at consistent speed --"
-             " chasing the remaining 25%% cost far more in unpredictable slowdowns than it was "
-             "worth for a project that doesn't need the absolute max training set size.",
+             "Re-profiled on an RTX 3060 12GB (previous defaults -- 2.2M/1.5M -- were tuned "
+             "against a 4GB RTX 3050 and are far too conservative here). Method: single "
+             "forward+backward+optimizer-step timing, torch.cuda.synchronize() around the "
+             "timed block, one excluded warmup call first. Tall+wide images are "
+             "disproportionately expensive, not just memory-heavy, at a given pixel AREA -- "
+             "e.g. at height=924 (an extreme skew-rotation outlier), step time stayed under "
+             "0.7s through 4.62M px but jumped to 1.6-6s by 7.39M px, a non-linear cliff tied "
+             "to aspect ratio (CTC's conv blocks only pool width in blocks 1-3, so very tall "
+             "images keep disproportionately large intermediate feature maps through blocks "
+             "4-5), not pure OOM. 5M sits safely below that cliff and keeps 95.6%% of S1 "
+             "(22,327/23,346 lines) vs. the old 1.5M cutoff's 75.2%%.",
     )
     parser.add_argument("--max-batch-size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--val-batches", type=int, default=40, help="cap validation batches per epoch for speed")
     parser.add_argument("--max-lines-per-epoch", type=int, default=None, help="debug: cap train examples/epoch")
+    parser.add_argument(
+        "--resume-from", type=Path, default=None,
+        help="a best_model.pt checkpoint to load model weights from before training -- for "
+             "running a long training budget in several shorter sessions (e.g. 4 epochs at a "
+             "time toward a 12-epoch total). Mirrors setu.modernizer.pretrain's --resume-from: "
+             "optimizer state is not saved/resumed, Adam restarts fresh each session (a minor "
+             "imperfection, not worth checkpointing optimizer state at this scale).",
+    )
+    parser.add_argument(
+        "--start-epoch", type=int, default=1,
+        help="epoch number to label the first epoch of this run as, for continuity in "
+             "logs/history when resuming (e.g. 5 if epochs 1-4 already ran)",
+    )
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)  # CLAUDE.md rule 6
@@ -258,6 +299,10 @@ def main() -> None:
     model = CRNN().to(device)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"CRNN parameters: {n_params:,}")
+
+    if args.resume_from is not None:
+        model.load_state_dict(torch.load(args.resume_from, map_location=device))
+        print(f"Resumed weights from {args.resume_from}")
 
     ctc_loss = nn.CTCLoss(blank=0, zero_infinity=True)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
@@ -299,14 +344,17 @@ def main() -> None:
             "vocab_size": len(wx.VOCAB),
             "augmentation": "setu.render.augment.augment_line (CPU, per-example) -- GPU-batched "
                             "augmentation from the roadmap's speed guidance is not yet implemented",
+            "resume_from": str(args.resume_from) if args.resume_from else None,
+            "start_epoch": args.start_epoch,
         },
     )
 
     history = []
     best_val_cer = float("inf")
     best_epoch = None
+    end_epoch = args.start_epoch + args.epochs - 1
 
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(args.start_epoch, end_epoch + 1):
         epoch_start = time.time()
         model.train()
         total_loss, n_batches, n_skipped_bad_length = 0.0, 0, 0
@@ -329,7 +377,7 @@ def main() -> None:
         epoch_time = time.time() - epoch_start
 
         print(
-            f"epoch {epoch:3d}/{args.epochs}  train_loss {mean_train_loss:.4f}  "
+            f"epoch {epoch:3d}/{end_epoch}  train_loss {mean_train_loss:.4f}  "
             f"val_CER {val_cer:.4f}  ({epoch_time:.1f}s, {n_skipped_bad_length} batches skipped: "
             f"CTC input shorter than target)"
         )

@@ -175,6 +175,41 @@ reconsidered.
 
 ## Other gotchas already hit and fixed (don't re-discover these)
 
+- **This machine's USB Wi-Fi adapter corrupts large WSL2 downloads.** Any
+  sustained transfer over a few hundred MB through WSL2 (pip installing
+  torch's CUDA wheel, `apt` fetching larger index files) failed with
+  `ssl.SSLError: [SSL: DECRYPTION_FAILED_OR_BAD_RECORD_MAC]` (pip) or
+  `Hash Sum mismatch` (apt) -- a *different* corrupted hash every retry,
+  on a *different* file every time, with the reported file size always
+  correct. That signature (right length, wrong bytes, passes Content-Length
+  but not the real checksum) means bit-level corruption somewhere in the
+  send path, not a flaky mirror or a TLS-version mismatch -- confirmed by
+  the fact that small transfers (a 16.7MB `pip install numpy`) always
+  succeeded while multi-hundred-MB ones almost always didn't: corruption
+  probability scales with transfer size/duration, not a fixed per-file
+  failure. Neither disabling checksum offload on the `vEthernet (WSL
+  (Hyper-V firewall))` adapter nor switching to WSL's mirrored networking
+  mode (`networkingMode=mirrored` in `%UserProfile%\.wslconfig`) fixed it
+  -- the machine's physical adapter is a cheap USB 802.11n dongle whose
+  driver exposes no checksum-offload toggle at all via
+  `Get-NetAdapterAdvancedProperty`, so the likely root cause (the USB
+  Wi-Fi chipset itself) isn't something software here can switch off.
+  **Working fix: brute-force retry.** A fresh `pip install torch
+  torchvision` restarts the whole download from scratch each time (no
+  partial-download resume), but each attempt has a real chance of getting
+  through clean -- it took 8 attempts in a retry loop (`for i in 1..8; do
+  pip install ... && break; done`) to get one fully clean run. If this
+  recurs: don't re-diagnose, just loop the install. Also worth knowing:
+  `wsl --install -d Ubuntu` itself failed on this machine with
+  `WININET_E_SECURITY_CHANNEL_ERROR` before any of the above was even
+  reachable, traced to `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\
+  Internet Settings\WinHttp`'s `DefaultSecureProtocols` being explicitly
+  locked to TLS-1.2-only (`2048`) -- widening it to TLS 1.2+1.3 (`10240`)
+  didn't actually fix that particular error either; what worked was
+  downloading Canonical's official WSL rootfs tarball directly
+  (`https://cloud-images.ubuntu.com/wsl/releases/24.04/current/ubuntu-
+  noble-wsl-amd64-wsl.rootfs.tar.gz`, sha256-verified) and `wsl --import`
+  rather than letting `wsl.exe` hit the Microsoft Store CDN at all.
 - **Python 3.14 on Linux defaults multiprocessing to `forkserver`**,
   which requires DataLoader `collate_fn` to be picklable — a local
   closure function fails silently with a pickling error. Both
@@ -224,8 +259,68 @@ manual file copy) regardless.
 the checkpoint is gitignored (`runs/.../best_model.pt`), so either copy
 it from the laptop or retrain here if needed.
 
-**CRNN training: still not started anywhere.** This machine (3060, 12GB)
-is specifically for that.
+**This machine (3060, 12GB) is now fully set up through HANDOFF.md Steps
+1-5** (as of commit `e834ba4`-era, same session that added the WSL
+networking gotcha above): Windows venv installed; KannadaLit4NLP
+downloaded and checksum-verified; S1 (23,346 lines, 0 skipped), S3
+(135,724 pairs), and the S2 render set (3,500 lines, frozen test split
+unchanged -- confirmed via `git diff data/splits`) all built; WSL2 +
+Ubuntu 24.04 installed (via the rootfs-import workaround above, not the
+Store installer); CUDA-enabled torch confirmed working in WSL
+(`torch.cuda.get_device_name(0)` -> "NVIDIA GeForce RTX 3060"); GPU
+memory settings re-profiled (see below). The S3-pretrain checkpoint
+transfer package was also moved into place and checksum-verified
+(`data/modernizer_vocab.json`,
+`runs/20260930T052116Z_modernizer_pretrain_s3/`).
+
+**CRNN training: still not started.** Step 6 (confirm epoch count, then
+train) is the only remaining step before this machine is actually
+training.
+
+**GPU memory settings re-profiled for the 3060 (Step 5, done, with one
+real correction along the way):** measured real
+forward+backward+optimizer-step timing (methodology:
+`torch.cuda.synchronize()` around the timed block, one excluded warmup
+call) across a grid of image heights/widths at **batch_size=1**,
+cross-referenced against the actual S1 manifest's pixel-area
+distribution. Found the same qualitative non-linear timing cliff
+HANDOFF.md already described for the 3050, just at a higher pixel count:
+single-image step time stays under ~0.7s through ~4.6M px even for
+extreme-skew tall outliers (height=924), then jumps to 1.6-6s by ~7.4M
+px. That single-image profile suggested `--max-single-image-pixels
+5,000,000` (up from 1,500,000; keeps 95.6% of S1 -- 22,327/23,346 lines
+-- vs. the old cutoff's 75.2%) and `--max-pixels-per-batch 6,000,000`
+(up from 2,200,000) were both safe.
+
+**The batch-budget number was wrong** -- confirmed only by actually
+running an epoch, not by the single-image profile. At 6M,
+`nvidia-smi`'s `memory.used` climbed to the 12GB ceiling *during*
+training with no corresponding growth in any single batch (one CUDA OOM
+warning, recovered by the allocator, then the run degraded to 150s+ per
+batch instead of crashing outright). Root cause: S1's images vary
+enormously in width/height, so a training epoch cycles through a huge
+range of distinct padded-batch shapes, and PyTorch's default CUDA
+allocator caches a separate memory block per distinct size it has ever
+seen rather than coalescing them -- `memory.used` ratchets upward
+through the epoch independent of how large any individual batch
+actually is. This is unrelated to the single-image timing cliff above;
+single-image profiling (batch_size=1, one shape at a time) cannot see
+it at all. Fix: `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`,
+which lets the allocator grow/shrink existing segments instead of
+hoarding one per size -- now set unconditionally at the top of
+`train.py` (via `os.environ.setdefault`, before `import torch`) so it's
+never forgotten. **Verified end-to-end** with that fix and
+`--max-pixels-per-batch` lowered to 3,000,000: a full epoch (21,272
+train lines) peaked at ~5GB (vs. 12GB/12GB without the fix) and
+completed in 2654s (~44min), 0 batches skipped, val_CER 0.0460 after
+just that one epoch. If `--max-pixels-per-batch` is ever raised back
+toward 6M, re-verify with a full epoch, not just single-image timing --
+that's exactly the gap that caused this.
+
+Also timed the `/mnt/d` header-scan startup cost HANDOFF.md flagged as
+slow on the old laptop (~4min there): **43 seconds here** for all
+23,346 S1 images -- local disk is not a bottleneck on this machine,
+nothing further to fix there.
 
 **Soft bridge, confidence flagging, chrF++/BLEU metrics, POS tagging
 prototype: all built and tested** against synthetic data (no real CRNN
@@ -252,13 +347,14 @@ nontrivial compilation troubleshooting.
 
 ## Suggested order of operations on this machine
 
-1. Steps 1-3 above (venv, corpus, render S1) — no GPU needed for any of
-   this, can run while Step 4 (WSL setup) also happens.
-2. Step 4 (WSL2 + CUDA torch) — confirm `torch.cuda.get_device_name(0)`
-   actually prints the 3060 before trusting anything built on top of it.
-3. Step 5 (re-profile GPU memory settings) — do not skip this and reuse
-   the laptop's numbers.
-4. Step 6 — confirm epoch count and get explicit go-ahead, then train.
+1. ~~Steps 1-3 above (venv, corpus, render S1)~~ — **done**, see above.
+2. ~~Step 4 (WSL2 + CUDA torch)~~ — **done**. Note: the straightforward
+   `wsl --install -d Ubuntu` path did not work on this machine; see the
+   WSL networking gotchas above if setting this up again from scratch.
+3. ~~Step 5 (re-profile GPU memory settings)~~ — **done**, new values
+   committed in `train.py`, see above.
+4. **Step 6 — confirm epoch count and get explicit go-ahead, then
+   train.** This is the only remaining step before CRNN training starts.
 5. Everything after that (soft bridge integration with a real
    checkpoint, S2 fine-tuning, joint training, Week 3/4 work) follows
    the roadmap's own sequencing in `CLAUDE.md`.

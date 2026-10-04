@@ -25,7 +25,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path("D:/major_proj/Palm_leaf_halekannada_to_hosakannada_translation/src")))
+_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_ROOT / "src"))
 from setu.data.wx import decode as wx_decode  # noqa: E402
 from setu.data.wx import encode as wx_encode  # noqa: E402
 
@@ -66,7 +67,7 @@ def normalize_for_wx(text: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-ROOT = Path("D:/major_proj/Palm_leaf_halekannada_to_hosakannada_translation")
+ROOT = _ROOT
 MASTER = ROOT / "data/raw_corpus/extracted/KannadaLit4NLP/KannadaLit4NLP_master.jsonl"
 S1_CORPUS = ROOT / "data/raw_corpus/s1_corpus.txt"
 S2_CORPUS = ROOT / "data/raw_corpus/s2_corpus.txt"  # id<TAB>old<TAB>modern, id stripped before generate.py sees it

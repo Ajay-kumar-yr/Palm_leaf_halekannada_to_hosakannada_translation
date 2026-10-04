@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path("D:/major_proj/Palm_leaf_halekannada_to_hosakannada_translation")
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 from setu.data.wx import decode as wx_decode  # noqa: E402
 from setu.data.wx import encode as wx_encode  # noqa: E402

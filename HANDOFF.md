@@ -1,107 +1,177 @@
-# Handoff notes — moving from RTX 3050 (4GB) laptop to RTX 3060 (12GB) desktop
+# Handoff: full setup from a bare clone + HKHPL copy
 
-Written at commit `f330c5e`. Read this alongside `CLAUDE.md` (project
-rules) — this file is session state, not a rules document, and should be
-deleted once it's stale rather than kept updated indefinitely.
+Written at commit `ba004af`, for the RTX 3060 (12GB) desktop, which as of
+this writing has **only** `git clone` done and the HKHPL dataset copied
+into `data/real/` — nothing else. This replaces the previous version of
+this file, which wrongly assumed more would carry over automatically.
 
-## Standing preference from the previous session
+Read alongside `CLAUDE.md` (project rules) — this file is session state,
+not a rules document, and should be deleted once it's stale rather than
+kept updated indefinitely.
+
+## Standing preference
 
 **Ask before starting any new process** (rendering, training, installing
 things) — confirm with the user first rather than just proceeding. This
-was an explicit, repeated instruction in the session that produced this
-handoff; it's not written down anywhere else, so carry it forward.
+was an explicit, repeated instruction across the session that produced
+this handoff; it's not written down anywhere else, so carry it forward.
 
-## Where things actually stand
+## What `git clone` actually gives you, and what it doesn't
 
-**Week 1: complete.** Page survey verdict filled (heuristic proxy, spot
-checked), S2 test-verse-ID split frozen (`data/splits/`), CRNN 8-example
-memorize check passes, damage simulator built, Palmira original-vs-B&W
-check done.
+Git gets you: all source code, `CLAUDE.md`/this file, the Navilu font
+(`data/external_models/fonts/navilu/Navilu.ttf` — small enough to commit
+directly, SIL OFL licensed), the Sajjan U-Net binarizer's `LICENSE` and
+`PROVENANCE.md` (not its weights, see below), `data/splits/*` (the
+**frozen S2 test-verse-ID split and its append-only audit trail —
+already correct, do not regenerate**, see the warning below), a handful
+of small committed result files (`data/raw_corpus/palmira_survey_results.jsonl`,
+`src/setu/pos/tagged_sample*.{jsonl,tsv}`), and the `*.py` build scripts
+under `data/raw_corpus/`.
 
-**Corpus:** Real KannadaLit4NLP dataset downloaded and used (Mendeley
-Data, CC BY 4.0) — not a placeholder. Built via
-`data/raw_corpus/build_corpora.py` (S1/S2) and `build_s3.py` (S3). The
-raw downloaded/generated corpus files are gitignored (reproducible from
-those two scripts + the public dataset); only the scripts are committed.
+Git does **not** get you (all gitignored, by design — see `.gitignore`):
+every `runs/<timestamp>_*/` folder (meaning **every checkpoint and every
+numeric result from this whole project only exists on the old laptop**
+unless someone copies them over by hand), `data/s1/images/` and
+`data/s2/images/` (rendered line images), `data/raw_corpus/*.txt` and
+`extracted/` (the built corpora — only the scripts that produce them are
+committed), `data/external_models/sajjan_unet/*.pth` (93MB weights),
+`data/modernizer_vocab.json`, and the `.venv/`.
 
-**S1 (23,346 rendered lines):** Fully re-rendered at current HEAD with
-every fix below already applied. Font is Navilu (SIL OFL, handwriting-
-style — replaced Nirmala UI, which read as "typed text pasted on a
-photo"; Nirmala kept only as a per-line fallback for danda/double-danda,
-which Navilu lacks). Ink/background compositing uses a multiply blend
-(not flat-replace) so leaf grain shows through strokes. Stroke distortion
-(a smooth per-glyph elastic warp, `apply_stroke_distortion` in
-`damage.py`) breaks up vector-font geometric perfection. **Fake-vs-real
-classifier result: 74.7%** on a 2,000-line sample — inside the roadmap's
-70-80% target band (`runs/20260930T101006Z_fake_vs_real_classifier`).
+**If you want the modernizer's S3-pretrained checkpoint
+(`best_model.pt`, val_char_acc 95.9%) without retraining it, it has to be
+copied from the old machine by hand — it is not retrievable any other
+way.** Same for any CRNN checkpoint, once one exists.
 
-**S3 modernizer pretraining: done, 4 epochs.** Final checkpoint:
-`runs/20260930T052116Z_modernizer_pretrain_s3/best_model.pt`. val_char_acc
-95.9%, val_loss 0.137, still improving when stopped (diminishing returns
-judged not worth chasing further — S3 is synthetic rule-generated data,
-only a warm-start before Week 3's real S2 fine-tuning). Vocab at
-`data/modernizer_vocab.json` (rebuild deterministically from the same
-corpus if lost). **Bug fixed along the way:** PyTorch's default post-LN
-transformer would not converge at all from scratch (loss stuck ~3.3 for
-350+ epochs on the 8-example memorize check) — fixed by setting
-`norm_first=True` in `setu/modernizer/model.py`. If anyone "simplifies"
-that back to default, it will silently break training again.
+## Step 1 — Python environment (Windows, for rendering)
 
-**CRNN training: NOT started.** `setu/recogniser/train.py` works
-end-to-end on this GPU after real debugging (see below) but no actual
-training run has happened yet — only timing/smoke tests. Recommended
-epoch count discussed with the user: **8-15 epochs**, given the stated
-bar is "pass without major objections," not full convergence (CTC/CRNN
-models typically want 20-30+ epochs to fully converge).
+Rendering needs a Windows-accessible font path for the Nirmala UI
+fallback (Navilu itself is just a `.ttf` file and works anywhere, but
+`fonts.py`'s fallback is hardcoded to `C:\Windows\Fonts\Nirmala.ttc` —
+fine on Windows, a no-op elsewhere since Navilu alone covers 97%+ of S1
+already).
 
-**Real-photo binarizer wired in:** `setu/demo/binarize.py` wraps S.P.
-Sajjan's U-Net (same model that produced HKHPL's own Ground_Truth_images;
-MIT licensed). Weights are gitignored
-(`data/external_models/sajjan_unet/unet_best_weights.pth`, 93MB) —
-re-download from the source repo noted in `PROVENANCE.md` in that folder
-if missing. Only used for the real-photo inference path (Palmira → cut
-lines → this → CRNN), never for synthetic S1/S2.
+```
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+```
 
-## GPU-memory tuning that MUST be redone on the 3060
+This installs `torch` CPU-only by default on Windows — that's fine,
+rendering doesn't need a GPU. `sacrebleu` and `segmentation-models-pytorch`
+are both already in `requirements.txt` from this session; the latter was
+genuinely added mid-session (CLAUDE.md "ask before adding a dependency"
+was satisfied for it already, nothing further to ask).
 
-Everything below was empirically profiled against the 4GB RTX 3050 and
-is almost certainly wrong (too conservative) for a 12GB card. Do not just
-reuse these numbers — re-profile, the same way this session did:
+## Step 2 — Download KannadaLit4NLP and rebuild the corpus
 
-- `setu/recogniser/train.py --max-single-image-pixels` (currently
-  1,500,000) and `--max-pixels-per-batch` (currently 2,200,000): these
-  bound actual scanned pixel height×width, NOT text length — height
-  varies independently of character count because `damage.py`'s skew
-  rotation uses a random angle per line (`expand=True` grows the canvas
-  unpredictably). A single 700-char outlier line was measured at
-  924×14,561px and used 3.3GB for a forward pass ALONE on the 4GB card.
-  At the current 1.5M-px cutoff, only 75% of S1 (17,505/23,346 lines) is
-  actually used for training — the rest is excluded for speed, not
-  dropped from the dataset itself. On 12GB this ceiling should move way
-  up, likely close to the full corpus.
-- Measured on the 4GB card at the current settings: **~31 min/epoch**
-  training (plus a one-time ~4min startup cost scanning image dimensions
-  — this scan reads 23,346 file headers and was slow specifically because
-  of the WSL↔Windows `/mnt/d` filesystem bridge; consider whether that's
-  still true on the new machine's setup).
-- Profiling method used (repeat this, don't guess): time a single
-  forward+backward+optimizer step on images of increasing pixel area
-  (`torch.cuda.synchronize()` around the timed block, with a warmup call
-  first — the first call includes one-time cuDNN algorithm-selection
-  overhead and will mislead you if included in the timing). Watch for a
-  *non-linear* jump, not just OOM — on the 3050, time was well-behaved
-  (~0.2-0.3s/step) up to ~1.9M px then jumped to 3.5s/step at 3.8M px
-  (13x slower for 2x the pixels) well before actually hitting OOM. The
-  CRNN's later conv blocks (4-5) don't reduce width, only height, so
-  very wide+tall images get disproportionately expensive, not just
-  memory-heavy — this is architectural, not GPU-specific, so the same
-  qualitative jump should appear on the 3060, just at a higher pixel
-  count.
-- `setu/modernizer/pretrain.py --batch-size`: was knocked down from 64 to
-  16 on the 4GB card after an OOM (concurrent GPU jobs also caused a
-  spurious OOM once — don't run two GPU processes at the same time on a
-  memory-constrained card; less of a concern with 12GB but still worth
-  checking `nvidia-smi` before launching a second job).
+The real KannadaLit4NLP dataset (Mendeley Data, CC BY 4.0, DOI
+`10.17632/nvjydxpxjr.3`) is not committed (34MB zip). Download it fresh:
+
+```
+mkdir -p data/raw_corpus/extracted
+curl -s "https://data.mendeley.com/api/datasets/nvjydxpxjr/files" -o /tmp/mendeley_files.json
+# parse the "download_url" field out of that JSON (file id may differ run
+# to run; don't hardcode it) and:
+curl -sL -o data/raw_corpus/KannadaLit4NLP.zip "<that download_url>"
+```
+
+Verify before trusting it: `sha256sum data/raw_corpus/KannadaLit4NLP.zip`
+should be `013245506e09a9f51c9102faa8f0db42410db888500605dd5c233df0dbeae1b1`.
+Then:
+
+```
+cd data/raw_corpus && unzip -q KannadaLit4NLP.zip -d extracted && cd ../..
+.venv\Scripts\python data/raw_corpus/build_corpora.py
+.venv\Scripts\python data/raw_corpus/build_s3.py
+.venv\Scripts\python data/raw_corpus/build_s2_render_set.py
+```
+
+**Before doing anything else, run `git diff data/splits/` and confirm it
+is empty.** `build_corpora.py` unconditionally recomputes the S2
+test-split freeze every time it runs — it *should* reproduce the exact
+same split deterministically (same corpus version + same seeded hash of
+verse_id), since `data/splits/s2_test_verse_ids.txt` is already correctly
+frozen and committed. But CLAUDE.md rule 1 is "never rewrite a frozen
+test split," so treat any actual diff here as a stop-everything problem
+(likely a different KannadaLit4NLP version got downloaded), not something
+to shrug off and continue past.
+
+## Step 3 — Render S1 (and S2, if needed yet)
+
+```
+PYTHONPATH=src .venv\Scripts\python -m setu.render.generate --corpus data/raw_corpus/s1_corpus.txt --out-dir data/s1 --manifest data/s1/manifest.jsonl --seed 0
+```
+
+~2 hours, CPU-bound (font rasterization + damage simulation, not GPU),
+should take about as long here as it did on the laptop. Expect 0 skipped
+(the danda/double-danda glyph fallback to Nirmala handles the ~15% of
+lines Navilu alone can't render). S2 isn't needed for CRNN training —
+defer it (`--corpus data/raw_corpus/s2_corpus_render.txt --paired`) until
+Week 3 work actually starts.
+
+## Step 4 — WSL2 + CUDA PyTorch (for training)
+
+```
+wsl --install -d Ubuntu   # if not already present
+wsl -d Ubuntu -- sudo apt update && sudo apt install -y python3-venv python3-pip
+wsl -d Ubuntu -- python3 -m venv ~/setu-venv
+wsl -d Ubuntu -- bash -c "source ~/setu-venv/bin/activate && pip install torch torchvision"
+wsl -d Ubuntu -- bash -c "source ~/setu-venv/bin/activate && pip install numpy Pillow tqdm pyyaml sacrebleu uharfbuzz freetype-py segmentation-models-pytorch"
+```
+
+`sudo apt install` needs an interactive password — that part can't be
+done from an automated session, do it in a real terminal first. Verify
+CUDA actually works before anything else:
+
+```
+wsl -d Ubuntu -- bash -c "source ~/setu-venv/bin/activate && python -c \"import torch; print(torch.cuda.get_device_name(0))\""
+```
+
+should print the RTX 3060.
+
+## Step 5 — Re-profile GPU memory settings for the 12GB card
+
+**Do not reuse the numbers already in `train.py`'s defaults
+(`--max-single-image-pixels 1500000`, `--max-pixels-per-batch 2200000`)
+— those were empirically tuned against the 4GB RTX 3050 and are almost
+certainly far too conservative for 12GB.** At that 1.5M-px cutoff, only
+75% of S1 (17,505/23,346 lines) actually gets used for training; on 12GB
+this ceiling should move way up, likely close to the full corpus.
+
+Profiling method used last time (repeat this, don't guess): time a single
+forward+backward+optimizer step on images of increasing pixel area, with
+`torch.cuda.synchronize()` around the timed block and a warmup call
+first (the first call includes one-time cuDNN algorithm-selection
+overhead that will mislead you if counted). Watch for a *non-linear*
+jump, not just OOM — on the 3050, per-step time was well-behaved
+(~0.2-0.3s) up to ~1.9M px, then jumped to 3.5s at 3.8M px (13x slower
+for 2x the pixels), well before actually hitting OOM. The CRNN's later
+conv blocks (4-5) don't reduce width, only height, so very wide+tall
+images get disproportionately expensive, not just memory-heavy — this is
+architectural, not GPU-specific, so expect the same qualitative jump on
+the 3060, just at a higher pixel count. A single 700-char outlier line
+was measured at 924×14,561px and used 3.3GB for a forward pass ALONE on
+the 4GB card — even on 12GB, some extreme outliers may still need
+excluding rather than batched around.
+
+Measured on the 4GB card at its tuned settings: **~31 min/epoch**
+training, plus a one-time ~4min startup cost scanning 23,346 image-file
+headers (slow specifically because of the WSL↔Windows `/mnt/d`
+filesystem bridge on that machine — worth checking whether this is still
+the bottleneck here, or whether local disk changes that number).
+
+Also: don't run two GPU processes at once even on 12GB without checking
+`nvidia-smi` first — a concurrent-job OOM already happened once on the
+4GB card from exactly this.
+
+## Step 6 — Confirm before starting the actual CRNN training run
+
+Per the standing preference above. Recommended epoch count from the
+earlier discussion: **8-15 epochs**, given the stated bar is "pass
+without major objections," not full convergence (CTC/CRNN models
+typically want 20-30+ epochs to fully converge) — but confirm this with
+the user before committing to a number, especially once real per-epoch
+timing on the 3060 is known and the total wall-clock budget can be
+reconsidered.
 
 ## Other gotchas already hit and fixed (don't re-discover these)
 
@@ -111,32 +181,84 @@ reuse these numbers — re-profile, the same way this session did:
   `train.py` and `pretrain.py` use plain functions/picklable classes for
   this reason; don't refactor back to a closure.
 - **Manifest image paths must use `.as_posix()`**, not `str(Path)` —
-  rendering runs on Windows (needs a Windows-accessible font), training
-  runs on WSL/Linux, and a Windows backslash is a literal filename
-  character on Linux, not a path separator. Already fixed in
-  `generate.py`; if S1/S2 ever gets re-rendered, this stays fixed
-  automatically, just don't revert it.
+  rendering runs on Windows (needs a Windows-accessible font) but
+  training runs on WSL/Linux, and a Windows backslash is a literal
+  filename character on Linux, not a path separator. Already fixed in
+  `generate.py` and in every reader that loads a manifest written on
+  Windows (`.replace("\\", "/")` before joining); don't revert either
+  side.
 - **PIL's decompression-bomb guard** rejects some real HKHPL scans
-  (300+ megapixels) — disabled in `textures.py` (`Image.MAX_IMAGE_PIXELS
-  = None`) since these are trusted local files, not untrusted uploads.
-- **`textures.py` re-scanned the real-image directory on every call** —
-  now cached at module level. If this regresses, rendering gets very
-  slow again (it's called multiple times per line: once for background,
-  once per hole).
+  (300+ megapixels) — disabled in `textures.py`
+  (`Image.MAX_IMAGE_PIXELS = None`) since these are trusted local files,
+  not untrusted uploads.
+- **`textures.py` caches the real-image directory listing** at module
+  level rather than re-scanning on every call. If this regresses,
+  rendering gets very slow again (it's called multiple times per line:
+  once for background, once per hole).
+- **sacrebleu's BLEU reads as 0 on short sentences** (a line under 4
+  words has no 4-grams to match, independent of quality) — documented,
+  expected behavior, not a bug to fix with a different smoothing method;
+  it's part of why CLAUDE.md treats chrF++ as the primary metric.
 
-## Suggested next steps on the new machine
+## Where things actually stand (project status, not machine status)
 
-1. `git pull`, copy `data/s1/images/` + `data/s1/manifest.jsonl` over (or
-   re-render — ~2h, CPU-bound, should be similar wall-clock on either
-   machine since it's not GPU-bound).
-2. Set up WSL2 Ubuntu + venv + CUDA torch (same process as this session:
-   `pip install torch torchvision` from the default PyPI index pulled in
-   a CUDA build fine on Linux; `segmentation-models-pytorch` additionally
-   needed for the binarizer).
-3. Re-profile the GPU-memory numbers above before launching any real
-   training run.
-4. **Confirm epoch count and get explicit go-ahead before starting CRNN
-   training** — per the standing preference noted at the top.
-5. After CRNN training: fake-vs-real check was only run on a 2,000-line
-   sample so far; Week 3 work (soft bridge, S2 rendering, modernizer
-   fine-tuning on S2, joint training) hasn't started.
+**Week 1: complete**, including the real (not heuristic-proxy) §6.4
+segmentation number — Palmira run over all 738 unique real HKHPL pages,
+**96.9% segmentation success rate** (`runs/20261003T081302Z_palmira_full_page_survey`
+on the laptop; the small results JSONL is committed at
+`data/raw_corpus/palmira_survey_results.jsonl`). A 25-photo stratified
+human-review sample also corrected the page-survey's "broken" bucket,
+which the heuristic had mostly wrong (dark background dominating
+whole-image stats, not actual illegibility) — the committed
+`data/splits/hkhpl_page_survey.csv` reflects this for those 25 rows; the
+other ~713 are still heuristic-proxy.
+
+**S1 (23,346 lines) and S2 (3,500 lines: all 1,358 frozen test +
+2,142 sampled train) are both built and rendered** on the laptop with
+every fix in place (Navilu font, multiply-blend compositing, stroke
+distortion, danda fallback) — but the rendered images themselves are
+gitignored, so this machine needs to redo Step 3 above (or receive a
+manual file copy) regardless.
+
+**S3 modernizer pretraining: done, 4 epochs**, val_char_acc 95.9% — but
+the checkpoint is gitignored (`runs/.../best_model.pt`), so either copy
+it from the laptop or retrain here if needed.
+
+**CRNN training: still not started anywhere.** This machine (3060, 12GB)
+is specifically for that.
+
+**Soft bridge, confidence flagging, chrF++/BLEU metrics, POS tagging
+prototype: all built and tested** against synthetic data (no real CRNN
+checkpoint exists yet to test against real recognizer output) —
+`src/setu/bridge/soft_bridge.py`, `src/setu/bridge/flagging.py`,
+`src/setu/eval/metrics.py`, `src/setu/pos/`. Nothing further to build
+here until a trained CRNN exists.
+
+**Real-photo binarizer wired in** (`src/setu/demo/binarize.py`, wraps
+S.P. Sajjan's U-Net — the same model that produced HKHPL's own ground
+truth) but its weights are gitignored; re-download per
+`data/external_models/sajjan_unet/PROVENANCE.md` if the demo pipeline is
+needed here. Not required for CRNN training itself.
+
+**Palmira: not set up on this machine, and not needed here.** The §6.4
+Palmira work is already done and recorded on the laptop (see above);
+redoing it here is only necessary if the live demo needs to run on this
+machine too. Its environment (a `palmira` conda env with Detectron2 + a
+custom-compiled DefGrid CUDA extension) predates this session's own
+work — no clean from-scratch setup script was ever recorded, so expect
+real friction if it's ever needed here; ask before attempting it, since
+it previously involved GPU-arch-specific CUDA toolkit pinning and
+nontrivial compilation troubleshooting.
+
+## Suggested order of operations on this machine
+
+1. Steps 1-3 above (venv, corpus, render S1) — no GPU needed for any of
+   this, can run while Step 4 (WSL setup) also happens.
+2. Step 4 (WSL2 + CUDA torch) — confirm `torch.cuda.get_device_name(0)`
+   actually prints the 3060 before trusting anything built on top of it.
+3. Step 5 (re-profile GPU memory settings) — do not skip this and reuse
+   the laptop's numbers.
+4. Step 6 — confirm epoch count and get explicit go-ahead, then train.
+5. Everything after that (soft bridge integration with a real
+   checkpoint, S2 fine-tuning, joint training, Week 3/4 work) follows
+   the roadmap's own sequencing in `CLAUDE.md`.

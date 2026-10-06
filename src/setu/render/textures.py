@@ -65,13 +65,13 @@ def _list_real_images(real_dir: Path) -> list[Path]:
         _REAL_IMAGES_CACHE[real_dir] = []
         return []
     exts = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-    images = [
+    images = sorted(
         p
         for p in real_dir.rglob("*")
         if p.is_file()
         and p.suffix.lower() in exts
         and not any("ground_truth" in part.lower() for part in p.parts)
-    ]
+    )
     _REAL_IMAGES_CACHE[real_dir] = images
     return images
 

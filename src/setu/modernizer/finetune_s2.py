@@ -66,10 +66,20 @@ VOCAB_PATH = Path("data/modernizer_vocab.json")
 INBAND_PATH = Path("data/splits/s2_inband_verse_ids.txt")
 
 
-def _load_cache_lines(cache_dir: Path, inband: set[int]) -> list[dict]:
-    with (cache_dir / "lines.jsonl").open(encoding="utf-8") as f:
-        rows = [json.loads(l) for l in f]
-    return [r for r in rows if not r["is_test"] and r["verse_id"] in inband]
+def _load_cache_lines(cache_dirs: list[Path], inband: set[int]) -> list[dict]:
+    """Rows from one or more caches. Each row is tagged with which cache it
+    came from, since `offset` indexes into that cache's own logprobs.npy
+    and the arrays are not concatenated."""
+    out = []
+    for ci, cache_dir in enumerate(cache_dirs):
+        with (cache_dir / "lines.jsonl").open(encoding="utf-8") as f:
+            rows = [json.loads(l) for l in f]
+        kept = [r for r in rows if not r["is_test"] and r["verse_id"] in inband]
+        for r in kept:
+            r["_cache_idx"] = ci
+        print(f"  {cache_dir.name}: {len(kept)} in-band non-test lines")
+        out.extend(kept)
+    return out
 
 
 def _split_train_val(rows: list[dict], val_fraction: float) -> tuple[list[dict], list[dict]]:
@@ -124,12 +134,12 @@ class S2FinetuneDataset(Dataset):
     lazily per worker -- a np.memmap handle does not survive being pickled
     into a DataLoader worker."""
 
-    def __init__(self, rows: list[dict], vocab: CharVocab, branch: str, logprobs_path: Path):
+    def __init__(self, rows: list[dict], vocab: CharVocab, branch: str, logprobs_paths: list[Path]):
         self.rows = rows
         self.vocab = vocab
         self.branch = branch
-        self.logprobs_path = logprobs_path
-        self._lp = None
+        self.logprobs_paths = logprobs_paths
+        self._lp: dict[int, object] = {}
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -139,13 +149,14 @@ class S2FinetuneDataset(Dataset):
         tgt = self.vocab.encode(r["modern_text"])
         if self.branch == "b3":
             return np.asarray(r["argmax_indices"], dtype=np.int64), tgt
-        if self._lp is None:
-            self._lp = np.load(self.logprobs_path, mmap_mode="r")
+        ci = r["_cache_idx"]
+        if ci not in self._lp:
+            self._lp[ci] = np.load(self.logprobs_paths[ci], mmap_mode="r")
         # np.array (not asarray) to force a copy: the memmap is opened
         # read-only, and asarray would hand back a read-only view, which
         # torch.from_numpy warns about as a non-writable tensor.
         block = np.array(
-            self._lp[r["offset"] : r["offset"] + r["n_frames"]], dtype=np.float32
+            self._lp[ci][r["offset"] : r["offset"] + r["n_frames"]], dtype=np.float32
         )
         return block, tgt
 
@@ -234,7 +245,11 @@ def evaluate(model, branch, loader, bridge_cfg, ce_loss, device) -> tuple[float,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cache-dir", type=Path, required=True, help="a runs/<...>_cache_s2_recogniser folder")
+    parser.add_argument(
+        "--cache-dir", type=Path, required=True, nargs="+",
+        help="one or more runs/<...>_cache_s2_recogniser folders; pass several to train on the "
+             "union (the extra in-band render has its own cache rather than disturbing the first)",
+    )
     parser.add_argument("--branch", choices=["b3", "b4"], required=True)
     parser.add_argument(
         "--resume-from", type=Path,
@@ -303,7 +318,7 @@ def main() -> None:
     ce_loss = nn.CrossEntropyLoss(ignore_index=vocab.pad_id)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    logprobs_path = args.cache_dir / "logprobs.npy"
+    logprobs_paths = [d / "logprobs.npy" for d in args.cache_dir]
     collate = Collate(vocab, args.branch)
     loaders = {}
     for name, subset in [("train", train_rows), ("val", val_rows)]:
@@ -312,7 +327,7 @@ def main() -> None:
             tgt_lens, args.max_tokens_per_batch, args.max_batch_size, seed=SEED
         )
         loaders[name] = DataLoader(
-            S2FinetuneDataset(subset, vocab, args.branch, logprobs_path),
+            S2FinetuneDataset(subset, vocab, args.branch, logprobs_paths),
             batch_sampler=sampler, num_workers=args.num_workers, collate_fn=collate,
         )
         print(f"  {name}: {len(subset)} lines in {len(sampler)} batches")
@@ -366,7 +381,7 @@ def main() -> None:
         {
             "seed": SEED,
             "branch": args.branch,
-            "cache_dir": str(args.cache_dir),
+            "cache_dirs": [str(d) for d in args.cache_dir],
             "resume_from": str(args.resume_from),
             "temperature": args.temperature,
             "pool_size": args.pool_size if args.branch == "b4" else None,

@@ -131,14 +131,23 @@ def _score(name: str, hyps: list[str], refs: list[str]) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache-dir", type=Path, required=True)
-    parser.add_argument("--b3", type=Path, required=True)
-    parser.add_argument("--b4", type=Path, required=True)
-    parser.add_argument("--temperature", type=float, required=True, help="must match B4's fine-tune")
+    parser.add_argument("--b3", type=Path, default=None)
+    parser.add_argument(
+        "--b4", type=Path, default=None,
+        help="omit to score B0/B3 only. Better than passing a B4 trained on different data "
+             "just to fill the column -- that would look like the matched comparison and is not.",
+    )
+    parser.add_argument("--temperature", type=float, default=None, help="required with --b4")
     parser.add_argument("--pool-size", type=int, default=2)
     parser.add_argument("--max-gen-len", type=int, default=1024,
                         help="in-band targets top out at 796 chars")
     parser.add_argument("--batch-size", type=int, default=8)
     args = parser.parse_args()
+
+    if args.b4 is not None and args.temperature is None:
+        parser.error("--temperature is required with --b4 (must match its fine-tune)")
+    if args.b3 is None and args.b4 is None:
+        parser.error("pass at least one of --b3 / --b4 (B0 alone needs no model)")
 
     torch.manual_seed(SEED)
     np.random.seed(SEED)
@@ -168,25 +177,29 @@ def main() -> None:
     refs = [r["modern_text"] for r in inband_test]
     logprobs = np.load(args.cache_dir / "logprobs.npy", mmap_mode="r")
 
-    b3_model = _load_modernizer(args.b3, vocab, device)
-    b4_model = _load_modernizer(args.b4, vocab, device)
-    cfg = SoftBridgeConfig(temperature=args.temperature, pool_size=args.pool_size)
-
-    print("generating B3 ...")
-    b3_hyps = _generate_b3(b3_model, inband_test, vocab, device, args.max_gen_len, args.batch_size)
-    print("generating B4 ...")
-    b4_hyps = _generate_b4(
-        b4_model, inband_test, logprobs, vocab, device, cfg, args.max_gen_len, args.batch_size
-    )
     b0_recognised = [_wx_indices_to_kannada(r["argmax_indices"]) for r in inband_test]
     b0_oracle = [r["text"] for r in inband_test]
-
     systems = [
         _score("B0_recognised", b0_recognised, refs),
         _score("B0_oracle", b0_oracle, refs),
-        _score("B3_argmax", b3_hyps, refs),
-        _score("B4_soft_bridge", b4_hyps, refs),
     ]
+
+    b3_hyps = b4_hyps = None
+    if args.b3 is not None:
+        print("generating B3 ...")
+        b3_hyps = _generate_b3(
+            _load_modernizer(args.b3, vocab, device), inband_test, vocab, device,
+            args.max_gen_len, args.batch_size,
+        )
+        systems.append(_score("B3_argmax", b3_hyps, refs))
+    if args.b4 is not None:
+        print("generating B4 ...")
+        cfg = SoftBridgeConfig(temperature=args.temperature, pool_size=args.pool_size)
+        b4_hyps = _generate_b4(
+            _load_modernizer(args.b4, vocab, device), inband_test, logprobs, vocab, device, cfg,
+            args.max_gen_len, args.batch_size,
+        )
+        systems.append(_score("B4_soft_bridge", b4_hyps, refs))
 
     run_dir = start_run(
         "eval_b0_b3_b4",
@@ -203,11 +216,16 @@ def main() -> None:
 
     with (run_dir / "per_line.jsonl").open("w", encoding="utf-8") as f:
         for i, r in enumerate(inband_test):
-            f.write(json.dumps({
+            rec = {
                 "id": r["id"], "verse_id": r["verse_id"],
                 "old_text": r["text"], "reference_modern": r["modern_text"],
-                "b0_recognised": b0_recognised[i], "b3": b3_hyps[i], "b4": b4_hyps[i],
-            }, ensure_ascii=False) + "\n")
+                "b0_recognised": b0_recognised[i],
+            }
+            if b3_hyps is not None:
+                rec["b3"] = b3_hyps[i]
+            if b4_hyps is not None:
+                rec["b4"] = b4_hyps[i]
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
     results = {
         "recogniser_cer_all_frozen_test": cer_all,
@@ -222,15 +240,20 @@ def main() -> None:
     for s in systems:
         print(f"{s['system']:18s} {s['chrf++']:>9.2f} {s['bleu']:>8.2f} "
               f"{s['mean_hyp_chars']:>10.0f} {s['mean_ref_chars']:>10.0f}")
-    b0 = next(s for s in systems if s["system"] == "B0_recognised")
+    by_name = {s["system"]: s for s in systems}
+    b0 = by_name["B0_recognised"]
     for name in ("B3_argmax", "B4_soft_bridge"):
-        s = next(x for x in systems if x["system"] == name)
-        print(f"{name} vs B0_recognised: chrF++ {s['chrf++'] - b0['chrf++']:+.2f}  "
-              f"BLEU {s['bleu'] - b0['bleu']:+.2f}")
-    b3s = next(s for s in systems if s["system"] == "B3_argmax")
-    b4s = next(s for s in systems if s["system"] == "B4_soft_bridge")
-    print(f"\nB4 - B3: chrF++ {b4s['chrf++'] - b3s['chrf++']:+.2f}  "
-          f"BLEU {b4s['bleu'] - b3s['bleu']:+.2f}   <- the headline comparison")
+        if name in by_name:
+            s = by_name[name]
+            verdict = "BELOW the copy floor" if s["chrf++"] < b0["chrf++"] else "above the floor"
+            print(f"{name} vs B0_recognised: chrF++ {s['chrf++'] - b0['chrf++']:+.2f}  "
+                  f"BLEU {s['bleu'] - b0['bleu']:+.2f}   ({verdict})")
+    if "B3_argmax" in by_name and "B4_soft_bridge" in by_name:
+        b3s, b4s = by_name["B3_argmax"], by_name["B4_soft_bridge"]
+        print(f"\nB4 - B3: chrF++ {b4s['chrf++'] - b3s['chrf++']:+.2f}  "
+              f"BLEU {b4s['bleu'] - b3s['bleu']:+.2f}   <- the headline comparison")
+    else:
+        print("\n(only one branch scored -- the B3-vs-B4 headline needs both)")
     print(f"Run folder: {run_dir}")
 
 

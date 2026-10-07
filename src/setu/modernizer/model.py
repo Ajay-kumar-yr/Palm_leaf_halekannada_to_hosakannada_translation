@@ -141,7 +141,12 @@ class Modernizer(nn.Module):
 
     @torch.no_grad()
     def greedy_generate(
-        self, src_ids: torch.Tensor, src_key_padding_mask: torch.Tensor, max_len: int
+        self,
+        src_ids: torch.Tensor,
+        src_key_padding_mask: torch.Tensor,
+        max_len: int,
+        no_repeat_ngram_size: int = 0,
+        repetition_penalty: float = 1.0,
     ) -> list[list[int]]:
         """src_ids: (T_src, B) -> per-batch generated id sequences (no BOS/EOS).
         The B3 (argmax) path. Delegates to greedy_generate_from_memory so B3
@@ -150,28 +155,78 @@ class Modernizer(nn.Module):
         padding, stopping) would silently land in the measured B3-vs-B4
         difference, which is the one thing the comparison must not confound."""
         return self.greedy_generate_from_memory(
-            self.encode(src_ids, src_key_padding_mask), src_key_padding_mask, max_len
+            self.encode(src_ids, src_key_padding_mask), src_key_padding_mask, max_len,
+            no_repeat_ngram_size=no_repeat_ngram_size, repetition_penalty=repetition_penalty,
         )
 
     @torch.no_grad()
     def greedy_generate_from_memory(
-        self, memory: torch.Tensor, memory_key_padding_mask: torch.Tensor, max_len: int
+        self,
+        memory: torch.Tensor,
+        memory_key_padding_mask: torch.Tensor,
+        max_len: int,
+        no_repeat_ngram_size: int = 0,
+        repetition_penalty: float = 1.0,
     ) -> list[list[int]]:
         """memory: (T_src, B, hidden) from either encode (B3) or
         encode_embeds (B4) -> per-batch generated id sequences (no BOS/EOS).
         B4 cannot use greedy_generate: its encoder input is a blended
-        embedding, not token ids, so there is nothing to pass as src_ids."""
+        embedding, not token ids, so there is nothing to pass as src_ids.
+
+        no_repeat_ngram_size / repetition_penalty default to no-ops, so
+        plain greedy decoding is unchanged unless they are asked for. They
+        exist because measurement showed unconstrained greedy decoding is
+        this model's dominant failure: intra-line word repetition ran to
+        0.253 against references' 0.038, worsening as teacher-forced loss
+        improved (0.158 at 721 training lines -> 0.253 at 2,796), because a
+        sharper output distribution makes greedy decoding lock into repeat
+        loops harder. Both knobs apply identically to B3 and B4, so using
+        them cannot tilt that comparison -- they fix the shared decoder,
+        not either interface.
+        """
+        if no_repeat_ngram_size == 1:
+            raise ValueError("no_repeat_ngram_size=1 would ban every token already emitted")
         device = memory.device
         batch = memory.shape[1]
+        n = no_repeat_ngram_size
+        # Built incrementally rather than rescanned each step: rebuilding
+        # would make generation O(T^2) per sequence, which at max_len 1024
+        # is slow enough to matter over a few hundred lines.
+        ngram_maps: list[dict[tuple[int, ...], set[int]]] = [{} for _ in range(batch)] if n else []
 
         generated = torch.full((1, batch), self.bos_id, dtype=torch.long, device=device)
         finished = torch.zeros(batch, dtype=torch.bool, device=device)
         for _ in range(max_len):
             tgt_padding_mask = torch.zeros(batch, generated.shape[0], dtype=torch.bool, device=device)
             logits = self.decode(generated, memory, tgt_padding_mask, memory_key_padding_mask)
-            next_ids = logits[-1].argmax(dim=-1)  # (B,)
+            step_logits = logits[-1].clone()  # (B, vocab)
+
+            if repetition_penalty != 1.0:
+                for b in range(batch):
+                    seen = torch.unique(generated[:, b])
+                    vals = step_logits[b, seen]
+                    # CTRL convention: divide positive logits, multiply
+                    # negative ones, so the penalty always discourages.
+                    step_logits[b, seen] = torch.where(
+                        vals > 0, vals / repetition_penalty, vals * repetition_penalty
+                    )
+
+            if n and generated.shape[0] >= n:
+                for b in range(batch):
+                    key = tuple(generated[-(n - 1) :, b].tolist())
+                    banned = ngram_maps[b].get(key)
+                    if banned:
+                        step_logits[b, list(banned)] = float("-inf")
+
+            next_ids = step_logits.argmax(dim=-1)  # (B,)
             next_ids = torch.where(finished, torch.full_like(next_ids, self.pad_id), next_ids)
             generated = torch.cat([generated, next_ids.unsqueeze(0)], dim=0)
+
+            if n and generated.shape[0] >= n:
+                for b in range(batch):
+                    tail = generated[-n:, b].tolist()
+                    ngram_maps[b].setdefault(tuple(tail[:-1]), set()).add(tail[-1])
+
             finished = finished | (next_ids == self.eos_id)
             if bool(finished.all()):
                 break

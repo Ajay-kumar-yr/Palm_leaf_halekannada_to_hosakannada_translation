@@ -75,7 +75,7 @@ def _load_modernizer(path: Path, vocab: CharVocab, device) -> Modernizer:
 
 
 @torch.no_grad()
-def _generate_b3(model, rows, vocab, device, max_len, batch_size) -> list[str]:
+def _generate_b3(model, rows, vocab, device, max_len, batch_size, gen_kw) -> list[str]:
     out = []
     for i in range(0, len(rows), batch_size):
         chunk = rows[i : i + batch_size]
@@ -89,13 +89,13 @@ def _generate_b3(model, rows, vocab, device, max_len, batch_size) -> list[str]:
                 mask[j, : len(s)] = False
             else:
                 mask[j, 0] = False  # an empty reading still needs one real position
-        for seq in model.greedy_generate(src, mask, max_len):
+        for seq in model.greedy_generate(src, mask, max_len, **gen_kw):
             out.append(vocab.decode(seq))
     return out
 
 
 @torch.no_grad()
-def _generate_b4(model, rows, logprobs, vocab, device, cfg, max_len, batch_size) -> list[str]:
+def _generate_b4(model, rows, logprobs, vocab, device, cfg, max_len, batch_size, gen_kw) -> list[str]:
     out = []
     for i in range(0, len(rows), batch_size):
         chunk = rows[i : i + batch_size]
@@ -111,7 +111,7 @@ def _generate_b4(model, rows, logprobs, vocab, device, cfg, max_len, batch_size)
         lengths = torch.tensor([b.shape[0] for b in blocks], dtype=torch.long, device=device)
         blended, mem_mask = apply_soft_bridge(src, lengths, model.src_embed.weight, cfg)
         memory = model.encode_embeds(blended, mem_mask)
-        for seq in model.greedy_generate_from_memory(memory, mem_mask, max_len):
+        for seq in model.greedy_generate_from_memory(memory, mem_mask, max_len, **gen_kw):
             out.append(vocab.decode(seq))
     return out
 
@@ -142,6 +142,12 @@ def main() -> None:
     parser.add_argument("--max-gen-len", type=int, default=1024,
                         help="in-band targets top out at 796 chars")
     parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument(
+        "--no-repeat-ngram-size", type=int, default=0,
+        help="block repeating any n-gram already emitted. 0 = off (plain greedy). Applied "
+             "identically to B3 and B4, so it cannot tilt that comparison.",
+    )
+    parser.add_argument("--repetition-penalty", type=float, default=1.0, help="1.0 = off")
     args = parser.parse_args()
 
     if args.b4 is not None and args.temperature is None:
@@ -184,12 +190,18 @@ def main() -> None:
         _score("B0_oracle", b0_oracle, refs),
     ]
 
+    gen_kw = {
+        "no_repeat_ngram_size": args.no_repeat_ngram_size,
+        "repetition_penalty": args.repetition_penalty,
+    }
+    print(f"decoding: {gen_kw}")
+
     b3_hyps = b4_hyps = None
     if args.b3 is not None:
         print("generating B3 ...")
         b3_hyps = _generate_b3(
             _load_modernizer(args.b3, vocab, device), inband_test, vocab, device,
-            args.max_gen_len, args.batch_size,
+            args.max_gen_len, args.batch_size, gen_kw,
         )
         systems.append(_score("B3_argmax", b3_hyps, refs))
     if args.b4 is not None:
@@ -197,7 +209,7 @@ def main() -> None:
         cfg = SoftBridgeConfig(temperature=args.temperature, pool_size=args.pool_size)
         b4_hyps = _generate_b4(
             _load_modernizer(args.b4, vocab, device), inband_test, logprobs, vocab, device, cfg,
-            args.max_gen_len, args.batch_size,
+            args.max_gen_len, args.batch_size, gen_kw,
         )
         systems.append(_score("B4_soft_bridge", b4_hyps, refs))
 
@@ -207,6 +219,8 @@ def main() -> None:
             "seed": SEED, "cache_dir": str(args.cache_dir), "b3": str(args.b3), "b4": str(args.b4),
             "temperature": args.temperature, "pool_size": args.pool_size,
             "max_gen_len": args.max_gen_len, "device": str(device),
+            "no_repeat_ngram_size": args.no_repeat_ngram_size,
+            "repetition_penalty": args.repetition_penalty,
             "n_frozen_test": len(test_rows), "n_inband_test_scored": len(inband_test),
             "note": "CER over all frozen test lines; chrF++/BLEU over in-band frozen test lines "
                     "only (disclosed) -- see data/raw_corpus/build_s2_inband_subset.py. The "

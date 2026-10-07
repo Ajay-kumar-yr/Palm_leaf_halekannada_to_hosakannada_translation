@@ -143,16 +143,32 @@ class Modernizer(nn.Module):
     def greedy_generate(
         self, src_ids: torch.Tensor, src_key_padding_mask: torch.Tensor, max_len: int
     ) -> list[list[int]]:
-        """src_ids: (T_src, B) -> per-batch generated id sequences (no BOS/EOS)."""
-        device = src_ids.device
-        batch = src_ids.shape[1]
-        memory = self.encode(src_ids, src_key_padding_mask)
+        """src_ids: (T_src, B) -> per-batch generated id sequences (no BOS/EOS).
+        The B3 (argmax) path. Delegates to greedy_generate_from_memory so B3
+        and B4 decode through the exact same code -- if the two paths had
+        separate copies of this loop, any drift between them (EOS handling,
+        padding, stopping) would silently land in the measured B3-vs-B4
+        difference, which is the one thing the comparison must not confound."""
+        return self.greedy_generate_from_memory(
+            self.encode(src_ids, src_key_padding_mask), src_key_padding_mask, max_len
+        )
+
+    @torch.no_grad()
+    def greedy_generate_from_memory(
+        self, memory: torch.Tensor, memory_key_padding_mask: torch.Tensor, max_len: int
+    ) -> list[list[int]]:
+        """memory: (T_src, B, hidden) from either encode (B3) or
+        encode_embeds (B4) -> per-batch generated id sequences (no BOS/EOS).
+        B4 cannot use greedy_generate: its encoder input is a blended
+        embedding, not token ids, so there is nothing to pass as src_ids."""
+        device = memory.device
+        batch = memory.shape[1]
 
         generated = torch.full((1, batch), self.bos_id, dtype=torch.long, device=device)
         finished = torch.zeros(batch, dtype=torch.bool, device=device)
         for _ in range(max_len):
             tgt_padding_mask = torch.zeros(batch, generated.shape[0], dtype=torch.bool, device=device)
-            logits = self.decode(generated, memory, tgt_padding_mask, src_key_padding_mask)
+            logits = self.decode(generated, memory, tgt_padding_mask, memory_key_padding_mask)
             next_ids = logits[-1].argmax(dim=-1)  # (B,)
             next_ids = torch.where(finished, torch.full_like(next_ids, self.pad_id), next_ids)
             generated = torch.cat([generated, next_ids.unsqueeze(0)], dim=0)

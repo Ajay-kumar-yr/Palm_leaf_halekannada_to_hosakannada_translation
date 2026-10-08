@@ -1,0 +1,6 @@
+{
+  "seed": 0,
+  "demo_run": "runs\\20261008T151237Z_demo_build_real",
+  "gold": "data\\real_lines\\gold\\gold_lines_corrected.jsonl",
+  "claim": "where the consensus reading is wrong, how often some sample held the right character -- information argmax discards by construction"
+}

@@ -1,0 +1,46 @@
+{
+  "n_lines": 6,
+  "consensus_wrong_chars": 73,
+  "recovered_in_some_sample": 25,
+  "recovery_rate": 0.3424657534246575,
+  "synthetic_ctc_top5_equivalent": 0.806,
+  "per_line": [
+    {
+      "crop": "group1_1.128/line_03.png",
+      "consensus_wrong": 12,
+      "some_sample_right": 3,
+      "n_samples": 5
+    },
+    {
+      "crop": "group1_1.128/line_07.png",
+      "consensus_wrong": 8,
+      "some_sample_right": 4,
+      "n_samples": 5
+    },
+    {
+      "crop": "group1_1.128/line_11.png",
+      "consensus_wrong": 14,
+      "some_sample_right": 3,
+      "n_samples": 5
+    },
+    {
+      "crop": "group1_1.128/line_15.png",
+      "consensus_wrong": 11,
+      "some_sample_right": 5,
+      "n_samples": 5
+    },
+    {
+      "crop": "group1_1.128/line_28.png",
+      "consensus_wrong": 18,
+      "some_sample_right": 7,
+      "n_samples": 5
+    },
+    {
+      "crop": "group1_1.198/line_03.png",
+      "consensus_wrong": 10,
+      "some_sample_right": 3,
+      "n_samples": 5
+    }
+  ],
+  "caveat": "ensemble over repeated vision-model readings, not the CTC soft bridge; scored against a single blind human transcription by one reader."
+}

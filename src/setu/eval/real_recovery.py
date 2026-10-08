@@ -69,3 +69,20 @@ for e in demo:
 print(f"\ncharacters the consensus got wrong        : {tot_wrong}")
 print(f"...where at least one sample was correct  : {tot_any}  ({100*tot_any/max(tot_wrong,1):.1f}%)")
 print(f"\nsynthetic, CTC top-5 (frame level)        : 80.6%")
+
+run_dir = start_run("real_recovery", {
+    "seed": SEED, "demo_run": str(args.run), "gold": str(args.gold),
+    "claim": "where the consensus reading is wrong, how often some sample held the right "
+             "character -- information argmax discards by construction",
+})
+finish_run(run_dir, {
+    "n_lines": len(per_line),
+    "consensus_wrong_chars": tot_wrong,
+    "recovered_in_some_sample": tot_any,
+    "recovery_rate": tot_any / max(tot_wrong, 1),
+    "synthetic_ctc_top5_equivalent": 0.806,
+    "per_line": per_line,
+    "caveat": "ensemble over repeated vision-model readings, not the CTC soft bridge; scored "
+              "against a single blind human transcription by one reader.",
+})
+print(f"Run folder: {run_dir}")

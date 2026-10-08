@@ -1,0 +1,15 @@
+{
+  "n_lines": 10,
+  "model": "gemini-3.5-flash-lite",
+  "grayscale": {
+    "mean_cer": 0.4469543719624878,
+    "median_cer": 0.43330194601381045
+  },
+  "binarized": {
+    "mean_cer": 0.4283129636235941,
+    "median_cer": 0.4341649341649342
+  },
+  "binarized_minus_grayscale": -0.01864140833889366,
+  "n_lines_binarized_better": 5,
+  "note": "CER against a single blind human transcription; lower is better"
+}

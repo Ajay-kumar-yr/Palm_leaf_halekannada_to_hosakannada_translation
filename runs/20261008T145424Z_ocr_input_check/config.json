@@ -1,0 +1,8 @@
+{
+  "seed": 0,
+  "model": "gemini-3.5-flash-lite",
+  "temperature": 0,
+  "gray_labels": "data\\real_lines\\gold\\gold_train.jsonl",
+  "bin_labels": "data\\real_lines\\gold_unet\\gold_train.jsonl",
+  "binarizer": "sajjan_unet"
+}

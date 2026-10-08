@@ -46,6 +46,8 @@ import base64
 import collections
 import json
 import statistics
+import time
+import urllib.error
 from pathlib import Path
 
 from setu.eval.metrics import agreement_cer, align
@@ -57,26 +59,53 @@ SEED = 0  # CLAUDE.md rule 6
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 
-def sample_readings(key: str, model: str, png: bytes, n: int, temperature: float) -> list[dict]:
+def sample_readings(ring: KeyRing, model: str, png: bytes, n: int, temperature: float,
+                    gap: float = 1.5) -> list[dict]:
     """n independent readings of one crop. Each is its own request: the
     API has no n>1 for this shape, and separate calls are what makes the
-    samples independent rather than one decode's beam."""
+    samples independent rather than one decode's beam.
+
+    Rotates keys and backs off, like the labeller. Five rapid calls per
+    crop otherwise trips the per-minute limit on the first image and the
+    whole run dies before reading anything.
+    """
     out = []
+    body = {"contents": [{"parts": [
+        {"inline_data": {"mime_type": "image/png", "data": base64.b64encode(png).decode()}},
+        {"text": PROMPT},
+    ]}], "generationConfig": {"temperature": temperature}}
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     for _ in range(n):
-        d = _post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-            {"x-goog-api-key": key},
-            {"contents": [{"parts": [
-                {"inline_data": {"mime_type": "image/png", "data": base64.b64encode(png).decode()}},
-                {"text": PROMPT},
-            ]}], "generationConfig": {"temperature": temperature}},
-        )
-        cands = d.get("candidates") or []
-        if not cands:
-            continue
-        parts = cands[0].get("content", {}).get("parts", [])
-        raw = "".join(p.get("text", "") for p in parts if not p.get("thought"))
-        out.append({"raw": raw, "text": clean(raw), "usage": d.get("usageMetadata")})
+        for attempt in range(5):
+            try:
+                kname, key = ring.current()
+            except RuntimeError:
+                return out  # every key spent; keep what we have
+            try:
+                d = _post(url, {"x-goog-api-key": key}, body)
+            except urllib.error.HTTPError as e:
+                msg = e.read().decode(errors="replace")
+                if e.code == 429:
+                    if "PerDay" in msg or "per day" in msg.lower():
+                        ring.retire(kname)
+                    else:
+                        ring.advance()
+                        time.sleep(min(20, 2 * 2 ** attempt))
+                    continue
+                if e.code in (500, 502, 503):
+                    time.sleep(min(20, 2 * 2 ** attempt))
+                    continue
+                raise
+            except (TimeoutError, urllib.error.URLError):
+                continue
+            cands = d.get("candidates") or []
+            if cands:
+                parts = cands[0].get("content", {}).get("parts", [])
+                raw = "".join(p.get("text", "") for p in parts if not p.get("thought"))
+                out.append({"raw": raw, "text": clean(raw), "usage": d.get("usageMetadata")})
+            ring.advance()  # spread load across keys
+            time.sleep(gap)
+            break
     return out
 
 
@@ -178,6 +207,10 @@ def main() -> None:
                    help="flag a character when the samples' agreement is below this "
                         "(1.0 = any disagreement at all)")
     p.add_argument("--max-variants", type=int, default=5)
+    p.add_argument("--binarized-labels", type=Path, default=None,
+                   help="Read the U-Net binarized crops instead of the photo crops. Measured "
+                        "on 10 gold lines: 0.428 CER against 0.447 grayscale, so a small but "
+                        "consistent gain (setu.eval.ocr_input_check).")
     p.add_argument("--model", default="gemini-3.5-flash")
     p.add_argument("--llm-model", default="gemini-3.5-flash")
     p.add_argument("--no-llm", action="store_true", help="sample readings only; skip modernization")
@@ -185,6 +218,11 @@ def main() -> None:
     args = p.parse_args()
 
     rows = [json.loads(l) for l in args.labels.open(encoding="utf-8")]
+    if args.binarized_labels:
+        binz = {json.loads(l)["crop"]: json.loads(l)["image"]
+                for l in args.binarized_labels.open(encoding="utf-8")}
+        rows = [{**r, "image": binz[r["crop"]], "input": "binarized"}
+                for r in rows if r["crop"] in binz]
     if args.split != "all":
         rows = [r for r in rows if r.get("demo_split") == args.split]
     rows.sort(key=lambda r: (r["page"], r["crop"]))
@@ -207,6 +245,7 @@ def main() -> None:
     run_dir = start_run("demo_build_real", {
         "seed": SEED, "labels": str(args.labels), "split": args.split,
         "n_lines": len(rows), "samples": args.samples, "temperature": args.temperature,
+        "input": "U-Net binarized" if args.binarized_labels else "photo crop (grayscale)",
         "agree_below": args.agree_below, "model": args.model,
         "llm_model": None if args.no_llm else args.llm_model,
         "uncertainty_source": "ENSEMBLE over repeated vision-model readings at non-zero "
@@ -220,8 +259,7 @@ def main() -> None:
     out, n_calls = [], 0
     for i, r in enumerate(rows):
         png = (REPO_ROOT / r["image"]).read_bytes()
-        kname, key = ring.current()
-        samples = sample_readings(key, args.model, png, args.samples, args.temperature)
+        samples = sample_readings(ring, args.model, png, args.samples, args.temperature)
         n_calls += len(samples)
         texts = [s["text"] for s in samples]
         base, slots = consensus(texts)

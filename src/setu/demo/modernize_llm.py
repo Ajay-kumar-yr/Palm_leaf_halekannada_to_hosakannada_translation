@@ -103,7 +103,7 @@ def modernize(text_block: str, branch: str, model: str, cache_dir: Path,
             )
             break
         except urllib.error.HTTPError as e:
-            body = e.read()[:300].decode(errors="replace")
+            body = e.read().decode(errors="replace")
             last_error = f"HTTP {e.code}: {body}"
             if e.code == 429:
                 if "PerDay" in body or "per day" in body.lower():

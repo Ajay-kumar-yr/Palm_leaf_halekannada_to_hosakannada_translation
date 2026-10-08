@@ -1,6 +1,10 @@
 # SETU — status, findings and next steps
 
-> **2026-10-08: read `GOLD_FINDINGS.md` and `DEMO_PLAN.md` first.**
+> **2026-10-08: read `RESULTS.md` first** — every defensible number in
+> one table, each with its run folder. Then `GOLD_FINDINGS.md` and
+> `DEMO_PLAN.md`.
+>
+> **Also 2026-10-08:**
 > `GOLD_FINDINGS.md` reports 32 hand-transcribed real lines, which
 > **answer §3.9's open question** (the real leaves DO carry ಱ, in 1 line
 > in 8, and the vision labeller erases every one) and show the machine

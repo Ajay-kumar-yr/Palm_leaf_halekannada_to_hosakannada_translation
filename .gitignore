@@ -1,9 +1,23 @@
+# Order matters: a `!` exception only works AFTER the rule it exempts.
+# Do not sort this file.
+
 __pycache__/
 *.pyc
 .venv/
 venv/
+.env
+
+# Model weights and checkpoints -- never committed, re-trained or copied by hand.
+*.ckpt
+*.pt
+*.pth
+.DS_Store
+
+# Run folders: records are force-added where they matter, weights never.
 runs/*/
 !runs/.gitkeep
+
+# Datasets and renders: too large, and reproducible from the committed scripts.
 data/gold/*
 !data/gold/.gitkeep
 data/s1/*
@@ -18,19 +32,27 @@ demo_pages/*
 !demo_pages/.gitkeep
 test_split/*
 !test_split/.gitkeep
+data/modernizer_vocab.json
+
+# Built corpora: only the scripts that produce them are committed.
 data/raw_corpus/*
 !data/raw_corpus/*.py
-data/modernizer_vocab.json
-*.ckpt
-*.pt
-*.pth
-.DS_Store
-transfer_to_3060/
-modrenizer_s3_pretrain/
-transfer_to_laptop/
+
+# Real line crops, glyph banks and binarized variants -- all regenerable.
 data/real_lines/
-.env
-data/real_lines/gold_raw/
 data/glyph_bank/
-data/real_lines/gold_bin/
-data/real_lines/gold_unet/
+data/glyph_bank_mid/
+
+# Demo runtime: job mailbox, working files, and the response cache.
+data/demo_jobs/
+data/demo_work/
+data/demo_cache/
+
+# One-off transfer packages.
+transfer_to_3060/
+transfer_to_laptop/
+modrenizer_s3_pretrain/
+data/glyph_bank_bin/
+data/glyph_bank_unet/
+data/s1_sample/
+MANIFEST.sha256

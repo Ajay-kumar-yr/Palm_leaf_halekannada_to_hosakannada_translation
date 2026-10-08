@@ -1,0 +1,13 @@
+{
+  "aligned_real_frames": 383427,
+  "wrong_top1_frames": 3607,
+  "recoverable_frames": 2907,
+  "unalignable": 0,
+  "unencodable": 0,
+  "recoverable_fraction_of_wrong_frames": 0.8059329082339894,
+  "mean_bridge_weight_on_true_symbol": 0.19983373121372772,
+  "mean_argmax_weight_on_true_symbol": 0.0,
+  "n_examples_written": 12,
+  "elapsed_seconds": 18.4,
+  "note": "argmax weight is 0.0 by construction, not by measurement: argmax keeps one symbol and discards the rest. These frames are where that discarding is demonstrably lossy. This does NOT show the bridge produced a correct final answer -- see the module docstring."
+}

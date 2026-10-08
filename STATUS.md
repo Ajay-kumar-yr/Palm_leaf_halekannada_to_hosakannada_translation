@@ -18,9 +18,16 @@ degenerate decoding, missing copy mechanism). The root cause appears to be
 a **task mismatch that predates this session**: the project title promises
 *halekannada → hosakannada*, i.e. orthographic modernization, but the
 training targets are KannadaLit4NLP's **ಭಾವಾರ್ಥ (scholarly commentary)**,
-which shares only **6.8%** of its words with the source. The recommended
-next step is a **forward rule-based orthographic modernizer**, which would
-match the title, cannot hallucinate, and demos well.
+which shares only **6.8%** of its words with the source.
+
+**Update 2026-10-08:** the fallback recommended here — a forward
+rule-based orthographic modernizer — is **also dead**. The corpus carries
+no archaic orthography to normalise (§3.9): the three forward rules fire
+**3 times in 3,500 lines**. KannadaLit4NLP is built from 2001 critical
+editions (plus a 1943 text), so its "old Kannada" is old *language* in
+modern *orthography*. Both modernization routes are therefore closed, and
+the current priority is a **recognition-centred demo** (§4.2), which is
+where the project's genuine result lives.
 
 ---
 
@@ -36,6 +43,7 @@ match the title, cannot hallucinate, and demos well.
 | CTC confidence distribution (real checkpoint) | mean top-1 **0.9606**; **11.69%** of frames below 0.9 | `20261006T152242Z_measure_confidence_distribution` |
 | Joint unlocked training | stable, recogniser never needed locking | `20261007T134952Z_joint_unlocked_train` |
 | POS tagging | 104 hand-applied tags | `src/setu/pos/` (earlier session) |
+| **Soft bridge, measured at frame level** | on frozen-test frames where top-1 was wrong, the correct symbol was still in the top-5 **80.6%** of the time; bridge carries it with mean weight **0.200**, argmax with **0.000** | `20261008T033215Z_recovery_examples` |
 
 ### CRNN training, 12 epochs total
 
@@ -226,64 +234,197 @@ out at 796 chars, so the 186 lines exceeding `MAX_LEN=2048` drop to zero.
   `HANDOFF.md` for the full write-up; the working fix is to retry the
   install in a loop (torch took 8 attempts).
 
+### 3.9 The corpus contains no archaic orthography at all (2026-10-08)
+
+Found while checking whether a Gemini transcription of a real palm-leaf
+photo had silently normalised ಱ/ೞ. It had — but so has everything else,
+including our own training data.
+
+| Source | ಱ (U+0CB1) | ೞ (U+0CDE) |
+|---|---|---|
+| Raw `KannadaLit4NLP_master.jsonl`, 27.1M chars, untouched | **11** | **0** |
+| S1 — recogniser training, 23,347 lines / 5.2M chars | **6** | **0** |
+| S2 — backs every reported end-to-end number, 3,500 lines | **0** | **0** |
+| Gemini's reading of one real HKHPL page, 1,282 chars | **0** | **0** |
+
+For scale, the raw corpus holds 1,156,698 ರ and 297,118 ಳ. Five lines out
+of 23,347 contain either archaic character.
+
+**This is not our pipeline.** The raw source has the same property, and
+`build_corpora.py`'s cleaning only strips punctuation and ASCII — ಱ/ೞ
+round-trip through WX fine (`rY`, `zY`) and were never filtered.
+
+**Cause**, from the dataset's own `SOURCE.md`: the corpus is vachanas
+(Basavanna, Allamaprabhu, Akkamahadevi, Siddharameshwara…), Sarvajna's
+tripadis, and D.V.G.'s *Mankutimmana Kagga* — **a 1943 text, 946 verses**
+— all taken from **2001 critical editions** (Kannada Pusthaka Pradhikara).
+Critical editions normalise orthography. Vachana literature was also
+plain-register by design, unlike the ornate halegannada of Pampa and Ranna.
+
+**So our "old Kannada" is old *language* in modern *orthography*.**
+
+Consequences:
+
+- **§4.1 as originally written is refuted** — see there.
+- **`CLAUDE.md`'s stated justification for WX output is unsupported.** It
+  argues syllable-level output would starve "ಱ and ೞ, the very letters
+  that mark a text as old Kannada." They were never present to starve. WX
+  remains the right choice on CTC class-count grounds (57 vs 600–900), but
+  the reason in `CLAUDE.md` is not the real one, and should not be
+  defended as written in the viva.
+- **The recogniser cannot read ಱ or ೞ.** Six training instances and zero
+  respectively; the WX symbols `rY`/`zY` carry essentially no signal. If
+  real manuscripts contain them, it will fail on precisely the characters
+  that define the task.
+- It partly explains the 1.53% CER: modern-orthography text in a modern
+  font is an easier read than true halekannada.
+
+**The open question, and it is cheap to settle:** do the real HKHPL
+manuscripts actually contain ಱ/ೞ? An hour of a Kannada reader's time over
+five pages decides it. If **yes**, we have a sharp, honest domain-gap
+finding for §6.4. If **no**, the title's task does not exist for this
+collection and the framing changes. Not answerable from this machine — the
+one page examined was a late calendrical text, not early kavya, and one
+page proves nothing.
+
+The soft-bridge claim survives either answer: it is about the interface
+between recognition and modernization, not about halekannada specifically.
+
 ---
 
 ## 4. Next steps — pick up here
 
-### 4.1 RECOMMENDED: forward rule-based orthographic modernizer
+### 4.1 ~~RECOMMENDED: forward rule-based orthographic modernizer~~ — REFUTED (2026-10-08)
 
-This is the highest-value remaining work. Rationale:
+**Do not build this.** The earlier recommendation assumed the old text
+carried archaic orthography for the rules to normalise. It does not — see
+§3.9. Measured by applying all three forward rules to every S2 line:
 
-- It matches what the **title** claims (*halekannada → hosakannada* =
-  orthographic modernization), unlike the commentary targets
-- `src/setu/modernizer/reverse_spelling.py` already implements three
-  **documented** orthographic rules in the modern→old direction
-- The **forward** direction is strictly better-posed: the historical
-  mergers were many-to-one (ಱ and ರ both collapsed into ರ), so old→modern
-  is **deterministic**, whereas modern→old needs guesswork about which
-  words historically carried ಱ
-- Output is copy-plus-targeted-edits, so it **cannot hallucinate** — no
-  word salad, content always faithful
-- It demos extremely well: side-by-side old/modern with changed characters
-  highlighted
-- It should score at or above B0, since it *is* B0 plus edits toward modern
-  orthography
+```
+rule 1 (nasal+virama → anusvara) fired :  3
+rule 2 (ಱ → ರ)                   fired :  0
+rule 3 (ೞ → ಳ)                   fired :  0
+lines changed : 3 / 3,500  (0.09%)
+```
 
-The three rules to invert:
+The engine would be a no-op: byte-identical to B0 on 3,497 of 3,500 lines.
+Every argument in the original recommendation still *reads* correctly —
+forward really is the deterministic direction, output really cannot
+hallucinate — but all of it is moot when nothing fires. The error was
+reasoning from what halekannada is in general rather than measuring this
+corpus, which takes about a minute:
 
-1. homorganic nasal cluster → anusvara (ಙ್+ಕ → ಂ+ಕ, ಞ್+ಚ → ಂಚ, ಣ್+ಟ → ಂಟ,
-   ನ್+ತ → ಂತ, ಮ್+ಪ → ಂಪ) — deterministic
-2. **ಱ → ರ** — deterministic
-3. **ೞ → ಳ** — deterministic
+```bash
+python -c "t=open('data/raw_corpus/s2_corpus_render.txt',encoding='utf-8').read(); print(t.count(chr(0x0CB1)), t.count(chr(0x0CDE)))"
+```
 
-**What is needed from you:** validate these three, and decide which
-*additional* old→modern rules are worth adding (archaic inflections such as
-ಇರ್ದ → ಇದ್ದ, ಕಾಣಾ, locative -ಅಲ್ಲಿ forms, etc.). Claude deliberately did
-not invent Kannada linguistic rules beyond inverting the documented three —
-that needs a Kannada reader's judgement.
+**Both modernization routes are therefore closed:** the learned one
+because the targets are ಭಾವಾರ್ಥ commentary (§3.1), the rule-based one
+because there is no archaic orthography to normalise (§3.9). There is at
+present no working modernization story, and the remaining effort should go
+to the demo (§4.2) rather than to a third attempt at this.
 
-### 4.2 Demo strategy
+### 4.2 Demo strategy — THE PRIORITY (restated 2026-10-08)
 
-**Demoing on training data will not work.** Measured on 300 training
-examples: chrF++ mean **14.70** (vs 13.44 held-out — only 1.3 better), and
-only **8 of 300** beat the B0 floor. The best single training example
-(24.76) is still visibly incoherent Kannada. The model barely memorised its
-own training set, so cherry-picking does not produce demo-quality output
-and any Kannada-reading examiner will see it.
+A good working demo is now the stated goal, and with §4.1 refuted the demo
+has to be built on **recognition**, not modernization.
 
-What *will* demo well:
+**Demoing the modernizer's output will not work.** Measured on 300
+training examples: chrF++ mean **14.70** (vs 13.44 held-out — only 1.3
+better), and only **8 of 300** beat the B0 floor. The best single training
+example (24.76) is still visibly incoherent Kannada. The model barely
+memorised its own training set, so cherry-picking produces nothing
+presentable and any Kannada-reading examiner will see it immediately.
 
-1. **Recognition** — real page → Palmira lines → CRNN reading old Kannada
-   at 1.5% CER. This genuinely works and is the project's strong result.
-2. **Rule-based orthographic modernization** (§4.1) — visibly correct,
-   faithful, explainable.
-3. **Confidence flagging** — which lines the system would send to a human.
+#### The three acts that do work
 
-Note `CLAUDE.md` rule 8 already sanctions a curated demo:
-`demo_pages/` never appears in any reported number, and "curation is for
-the demo only and is disclosed explicitly in the report." Keep that
-disclosure, and have the answer to *"is that a held-out example?"* ready —
-being unable to answer it is what damages you, not the curation itself.
+1. **Recognition on a real page.** Real HKHPL photo → Palmira finds lines
+   → crop → CRNN reads each line. The project's genuine result (1.53% CER
+   on synthetic). Needs Palmira, hence the laptop.
+2. **Confidence flagging as triage.** `src/setu/bridge/flagging.py` is
+   built and tested. Show which lines the system would route to a human.
+   This turns the synthetic→real domain gap from an embarrassment into a
+   feature: *the system knows what it does not know.* Strongest honest
+   card in the deck.
+3. **The soft bridge, shown at frame level — BUILT, 2026-10-08.**
+   `src/setu/bridge/recovery_examples.py`, run
+   `20261008T033215Z_recovery_examples`. The novel contribution,
+   demonstrated **without** depending on the modernizer being any good.
+
+   Measured over all 1,358 frozen-test lines (383,427 aligned non-blank
+   frames):
+
+   | | |
+   |---|---|
+   | frames where the recogniser's top-1 was wrong | **3,607** |
+   | …of those, correct symbol still inside the top-5 | **2,907 (80.6%)** |
+   | mean weight the **bridge** puts on that correct symbol | **0.200** |
+   | mean weight **argmax** puts on it | **0.000** |
+
+   That aggregate is the slide. It beats three anecdotes because it is a
+   quantified property of the whole frozen test split, and it pre-empts
+   "aren't those cherry-picked?" — the 12 worked examples in
+   `examples.md` are the clearest instances of a pattern that holds
+   across 2,907 frames.
+
+   **Best examples for the demo are #2 and #3**: `x` vs `X` (ದ vs ಧ) at a
+   0.500/0.500 split. A genuinely confusable minimal pair, the recogniser
+   exactly undecided, argmax forced to bet — and wrong. Example #1 is a
+   blank-vs-letter split, less visually compelling to a Kannada reader.
+
+   Per-frame truth comes from **CTC forced alignment** (Viterbi against
+   the ground-truth old text), verified by checking that the CTC-collapse
+   of every alignment reproduces its target exactly — 400/400 on a test
+   sample, 0 mismatches.
+
+   Note this is **weaker than roadmap §4.5's "worked recovery examples"**,
+   which wanted the bridge to produce the right *final* answer. That needs
+   a working modernizer and cannot be shown. The defensible claim is
+   "**the information survives the interface**" — argmax assigns the
+   correct symbol weight 0 by construction; the bridge does not. Do not
+   let it drift to "the bridge fixed the error" under questioning. It did
+   not; it declined to throw the answer away.
+
+**Modernization in the demo:** show it, framed as a measured negative
+result with the §3.1/§3.9 root-cause analysis attached. Hiding it invites
+"so where is the modernization your title promises?" with no answer ready.
+A documented, well-analysed failure is respectable; an unexplained gap is
+not.
+
+#### Order of operations
+
+1. **Palmira crops on the laptop** (`TRANSFER_TO_LAPTOP.md` §7 step 1).
+   Everything else is blocked on this, and it also unblocks §4.3.
+2. **Look at CRNN output on ~10 real pages before building anything
+   around it.** This decides whether act 1 is viable. The roadmap's own
+   Part 3.3 forecast is **40–70% CER on real palm leaf** against 8–15% on
+   synthetic — and we beat the synthetic forecast by a wide margin, which
+   says nothing about the real side. Assume nothing here; look first.
+3. **Then pick the demo shape** (below).
+4. **Curate `demo_pages/`** — still empty, just a `.gitkeep`. Rank
+   candidates by `Character Line Segment` count in the committed
+   `data/raw_corpus/palmira_survey_results.jsonl` (738 pages); that is a
+   far better quality signal than the brightness heuristic in
+   `data/splits/hkhpl_page_survey.csv`, where only 25 of 738 rows were
+   human-reviewed. Free, needs no Palmira, can be done before the move.
+
+#### Contingency, decided by step 2
+
+- **If the CRNN reads real lines respectably** — demo acts 1 + 2 + 3 on
+  real pages. Best case, and the strongest version of the project.
+- **If it reads them badly** — demo act 1 on *synthetic* lines (where the
+  1.53% is real and reportable), then show the real-page attempt
+  side by side with the measured confidence drop as the §6.4 domain-gap
+  result, then acts 2 + 3. Less flashy, equally honest, and it still
+  answers "did you use the dataset your project is about?"
+
+Either way the demo has a spine that does not depend on the modernizer.
+
+`CLAUDE.md` rule 8 already sanctions curation: `demo_pages/` never appears
+in any reported number, and "curation is for the demo only and is disclosed
+explicitly in the report." Keep that disclosure, and have the answer to
+*"is that a held-out example?"* ready — being unable to answer it is what
+damages you, not the curation itself.
 
 ### 4.3 §6.4 real-imagery measurements — BLOCKED
 

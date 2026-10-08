@@ -118,33 +118,72 @@ def build_demo_set() -> tuple[list[tuple[str, Path]], set[str], set[tuple]]:
     return demo, stems, signatures
 
 
-def build_sample_set(n: int, excl_stems: set[str], excl_sigs: set[tuple]) -> list[tuple[str, Path]]:
+def eligible_pages(excl_stems: set[str], excl_sigs: set[tuple]) -> dict[str, tuple[str, int]]:
+    """stem -> (rel path, surveyed line count), one entry per distinct page.
+
+    The survey's "738 unique photos" are 568 distinct pages plus 170
+    higher-resolution re-photos (dataset/hd_images) of the same pages --
+    the signature dedup cannot see those because the resolution differs.
+    Dedupe by page stem so no page is drawn twice; prefer the standard
+    Dataset/ copy over its hd twin."""
     sigs = survey_signatures()
-    # The survey's "738 unique photos" are 568 distinct pages plus 170
-    # higher-resolution re-photos (dataset/hd_images) of the same pages --
-    # the signature dedup cannot see those because the resolution differs.
-    # Dedupe by page stem so no page is sampled twice; prefer the standard
-    # Dataset/ copy over its hd twin.
-    by_page: dict[str, str] = {}
+    by_page: dict[str, tuple[str, int]] = {}
     for line in SURVEY_JSONL.open(encoding="utf-8"):
         rec = json.loads(line)
         if "error" in rec:
             continue
-        if rec.get("class_counts", {}).get(LINE_CLASS, 0) < 1:
+        n_lines = rec.get("class_counts", {}).get(LINE_CLASS, 0)
+        if n_lines < 1:
             continue
         rel = rec["path"]
         stem = page_stem(rel)
         if stem in excl_stems or sigs.get(rel) in excl_sigs:
             continue
-        if stem not in by_page or ("hd_images" in by_page[stem] and "hd_images" not in rel):
-            by_page[stem] = rel
-    eligible = sorted(by_page.values())  # deterministic base order before the seeded draw
+        if stem not in by_page or ("hd_images" in by_page[stem][0] and "hd_images" not in rel):
+            by_page[stem] = (rel, n_lines)
+    return by_page
+
+
+def page_id_for(rel: str) -> str:
+    # Stems are unique after the dedupe, so the stem is the page id.
+    return page_stem(rel) + ("_hd" if "hd_images" in rel else "")
+
+
+def build_sample_set(n: int, excl_stems: set[str], excl_sigs: set[tuple]) -> list[tuple[str, Path]]:
+    # Must stay byte-identical to the draw that produced the committed
+    # sample run (20261008T055116Z): same pool, same order, same seed.
+    eligible = sorted(rel for rel, _ in eligible_pages(excl_stems, excl_sigs).values())
     if len(eligible) < n:
         raise RuntimeError(f"only {len(eligible)} eligible pages, wanted {n}")
     rng = random.Random(SEED)
     picked = sorted(rng.sample(eligible, n))
-    # Stems are unique after the dedupe above, so the stem is the page id.
-    return [(page_stem(rel) + ("_hd" if "hd_images" in rel else ""), REAL_DIR / rel) for rel in picked]
+    return [(page_id_for(rel), REAL_DIR / rel) for rel in picked]
+
+
+def build_train_set(lines_per_group: int, excl_stems: set[str], excl_sigs: set[tuple],
+                    sample: list[tuple[str, Path]]) -> list[tuple[str, Path]]:
+    """Pages for the teacher-student labels (DEMO_PLAN.md). Excludes demo
+    AND sample pages, so the fine-tuned recogniser never trains on a page
+    a reported number or the demo is drawn from. Balanced across the four
+    manuscript groups (stem prefix 1-4, which look like four different
+    hands): pages are drawn per group until the surveyed line count
+    reaches `lines_per_group`."""
+    sample_stems = {page_stem(str(p)) for _, p in sample}
+    pool = {s: v for s, v in eligible_pages(excl_stems, excl_sigs).items() if s not in sample_stems}
+    rng = random.Random(SEED + 1)
+    picked = []
+    for group in sorted({s.split(".")[0] for s in pool}):
+        stems = sorted(s for s in pool if s.split(".")[0] == group)
+        rng.shuffle(stems)
+        total = 0
+        for s in stems:
+            if total >= lines_per_group:
+                break
+            rel, n_lines = pool[s]
+            picked.append(rel)
+            total += n_lines
+        print(f"  train group {group}: {total} surveyed lines")
+    return [(page_id_for(rel), REAL_DIR / rel) for rel in sorted(picked)]
 
 
 def mask_filled_crop(img_bgr: np.ndarray, mask: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
@@ -226,9 +265,17 @@ def process_page(demo_gpu, demo_cpu_holder, page_id: str, path: Path, out_dir: P
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n-sample", type=int, default=50)
+    ap.add_argument("--train-lines-per-group", type=int, default=160)
+    ap.add_argument("--sets", default="demo,sample",
+                    help="Comma list of sets to cut: demo, sample, train. Sets whose "
+                         "manifest already exists are refused, never overwritten.")
     ap.add_argument("--time-steps", type=int, default=0,
                     help="Measure N pages (demo set), project the run, write NOTHING, exit.")
     args = ap.parse_args()
+    wanted = [s.strip() for s in args.sets.split(",") if s.strip()]
+    unknown = set(wanted) - {"demo", "sample", "train"}
+    if unknown:
+        sys.exit(f"unknown set(s): {sorted(unknown)}")
 
     random.seed(SEED)
     np.random.seed(SEED)
@@ -240,8 +287,14 @@ def main() -> None:
     assert not overlap, f"demo/sample overlap: {overlap}"
     assert not (excl_stems & {page_stem(str(p)) for _, p in sample}), "sample contains a demo stem"
     assert len({page_stem(str(p)) for _, p in sample}) == len(sample), "sample contains a page twice"
-    print(f"demo pages: {len(demo)}   sample pages: {len(sample)} "
+    train = build_train_set(args.train_lines_per_group, excl_stems, excl_sigs, sample)
+    train_stems = {page_stem(str(p)) for _, p in train}
+    assert not (train_stems & excl_stems), "train contains a demo page"
+    assert not (train_stems & {page_stem(str(p)) for _, p in sample}), "train contains a sample page"
+    assert len(train_stems) == len(train), "train contains a page twice"
+    print(f"demo pages: {len(demo)}   sample pages: {len(sample)}   train pages: {len(train)} "
           f"(excluded {len(excl_stems)} demo stems, {len(excl_sigs)} photo signatures)")
+    all_sets = {"demo": demo, "sample": sample, "train": train}
 
     demo_gpu = VisualizationDemo(build_cfg("cuda"))
     cpu_holder = [None]
@@ -256,7 +309,7 @@ def main() -> None:
         torch.cuda.reset_peak_memory_stats()
         stats = [process_page(demo_gpu, cpu_holder, pid, p, tmp, _Null()) for pid, p in demo[: args.time_steps]]
         per = (time.time() - t0) / len(stats)
-        total = len(demo) + len(sample)
+        total = sum(len(all_sets[s]) for s in wanted)
         print(f"measured {len(stats)} pages: {per:.1f}s/page, peak GPU "
               f"{torch.cuda.max_memory_allocated() / 2**30:.2f} GiB, "
               f"devices {sorted({s['device'] for s in stats})}, lines {[s['n_lines'] for s in stats]}")
@@ -266,17 +319,20 @@ def main() -> None:
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_dir = REPO_ROOT / "runs" / f"{ts}_palmira_line_crops"
     run_dir.mkdir(parents=True, exist_ok=False)
-    config = {"seed": SEED, "n_sample": args.n_sample, "line_class": LINE_CLASS,
+    config = {"seed": SEED, "sets": wanted, "n_sample": args.n_sample,
+              "train_lines_per_group": args.train_lines_per_group, "line_class": LINE_CLASS,
               "palmira_weights": "pretrained/Palmira_indiscapes.pth (as downloaded)",
               "input": "original colour photo (never black-and-white)",
               "score_thresh": 0.5, "mask_fill": "median colour of dilated mask interior",
               "sample_exclusion": "filename stem or photo signature shared with any demo page",
-              "demo_pages": [p for p, _ in demo], "sample_pages": [p for p, _ in sample]}
+              "train_exclusion": "every demo and sample page",
+              **{f"{s}_pages": [p for p, _ in all_sets[s]] for s in wanted}}
     (run_dir / "config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
     (run_dir / "git_commit.txt").write_text(git_commit() + "\n", encoding="utf-8")
 
     results = {}
-    for set_name, pages in (("demo", demo), ("sample", sample)):
+    for set_name in wanted:
+        pages = all_sets[set_name]
         out_dir = OUT_ROOT / set_name
         if (out_dir / "manifest.jsonl").exists():
             raise RuntimeError(f"{out_dir}/manifest.jsonl exists -- refusing to overwrite; move it aside first")

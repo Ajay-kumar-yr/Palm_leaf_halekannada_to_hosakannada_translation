@@ -53,6 +53,17 @@ def cer(ref: Sequence[T], hyp: Sequence[T]) -> float:
     return edit_distance(ref, hyp) / len(ref)
 
 
+def agreement_cer(a: Sequence[T], b: Sequence[T]) -> float:
+    """Disagreement between two transcriptions when NEITHER is the
+    reference (DEMO_PLAN.md: two independent machine labellers):
+    edit_distance / max(len). Symmetric, unlike `cer`, and bounded to
+    [0, 1]. Two empty sequences agree perfectly (0.0)."""
+    longest = max(len(a), len(b))
+    if longest == 0:
+        return 0.0
+    return edit_distance(a, b) / longest
+
+
 @dataclass(frozen=True)
 class CorpusScore:
     score: float

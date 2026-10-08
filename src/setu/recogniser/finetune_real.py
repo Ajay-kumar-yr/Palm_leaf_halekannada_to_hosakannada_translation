@@ -110,7 +110,19 @@ class RealLineDataset(Dataset):
 
 
 def split_real(rows: list[dict], val_fraction: float) -> tuple[list[dict], list[dict]]:
-    """Hash of the crop id, so the split is stable as labels are added."""
+    """Held-out real lines.
+
+    If the label set carries `demo_split` (written by
+    `build_label_set --holdout-every`), that decides: the demo is
+    writer-dependent by decision (DEMO_PLAN.md 5b), so the lines it
+    will display must be exactly the ones training never saw, chosen
+    before training rather than by a hash that could drift as labels
+    are added. Otherwise fall back to a hash of the crop id, which is
+    stable as the label set grows."""
+    if any("demo_split" in r for r in rows):
+        train = [r for r in rows if r.get("demo_split") != "holdout"]
+        val = [r for r in rows if r.get("demo_split") == "holdout"]
+        return train, val
     threshold = int(val_fraction * 256)
     train, val = [], []
     for r in rows:
@@ -134,14 +146,19 @@ def evaluate_real(model, loader, device) -> tuple[float, list[tuple[str, str]]]:
     return total / max(n, 1), samples
 
 
+def load_rows(labels: Path) -> list[dict]:
+    return [json.loads(l) for l in labels.open(encoding="utf-8")]
+
+
 def build_loaders(args, device):
-    rows = [json.loads(l) for l in (args.labels).open(encoding="utf-8")]
+    rows = load_rows(args.labels)
     if not rows:
         raise SystemExit(f"{args.labels} is empty -- run setu.label.build_label_set first")
     real_train, real_val = split_real(rows, args.val_fraction)
     set_dir = args.labels.parent
+    how = "demo hold-out" if any("demo_split" in r for r in rows) else "hash split"
     print(f"real: {len(rows)} labelled lines -> {len(real_train)} train, {len(real_val)} val "
-          f"({len({r['page'] for r in rows})} pages)")
+          f"({len({r['page'] for r in rows})} pages, {how})")
 
     train_ds = RealLineDataset(real_train, set_dir, augment=True, seed=SEED)
     val_ds = RealLineDataset(real_val, set_dir, augment=False, seed=SEED)
@@ -295,11 +312,14 @@ def main() -> None:
         print("wrote nothing")
         return
 
+    rows = load_rows(args.labels)
     run_dir = start_run("crnn_finetune_real", {
         "seed": SEED, "labels": str(args.labels), "resume_from": str(args.resume_from),
         "n_real_train": len(real_train), "n_real_val": len(real_val),
         "epochs": args.epochs, "lr": args.lr, "replay_ratio": None if args.no_replay else args.replay_ratio,
         "val_fraction": args.val_fraction, "line_height": LINE_HEIGHT,
+        "split": "demo hold-out (demo_split field)" if any("demo_split" in r for r in rows)
+                 else "hash of crop id",
         "max_pixels_per_batch": args.max_pixels_per_batch, "device": str(device),
         "label_provenance": "vision-LLM transcriptions filtered by setu.label.build_label_set -- "
                             "NO human verification; real CER below is against machine labels",

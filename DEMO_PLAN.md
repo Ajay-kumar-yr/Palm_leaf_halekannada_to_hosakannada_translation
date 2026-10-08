@@ -92,6 +92,43 @@ paid Flash-Lite if quotas bite.
 **Dependencies:** adding an API client is a dependency change — approved
 by the user 2026-10-08. Keep keys in environment variables, never in git.
 
+## 5b. Decision 2026-10-08 (evening): writer-dependent demo
+
+**Measured first.** A fine-tune on 43 labelled real lines
+(`20261008T082646Z_crnn_finetune_real`) memorised them — train loss
+0.08 — but did not generalise: held-out real CER stayed at **0.71** and
+the output was still garbage. Against that, the rule-3 check drove 8
+real lines to **CER 0.0000 in 22 s**. The architecture can read this
+handwriting; it is short of labelled examples, not capability. S1
+replay held synthetic CER at **0.0029** throughout, so adaptation costs
+nothing on the synthetic side.
+
+**Decision (user, 2026-10-08): train on the demo pages themselves**,
+holding out a quarter of each page's lines, and demo the held-out
+lines. Same hand, same ink, same leaf, so far fewer labels are needed —
+the only route to a working real-crop demo inside the deadline.
+
+**This makes the demo writer-dependent and page-dependent, and that
+must be said plainly**, in the report and unprompted in the viva:
+
+- the recogniser was adapted on lines from *these same pages*;
+- the lines shown were held out from training, but the model has seen
+  other lines in the same hand, from the same leaf;
+- so it demonstrates **adaptation to a known hand**, not generalisation
+  to unseen manuscripts — and the honest generalisation number is the
+  one above: **0.71 CER on held-out pages**, which belongs in the
+  report next to it;
+- `CLAUDE.md` rule 8 still holds: demo pages appear in **no reported
+  number**. The §6.4 domain-gap figures stay on the 50-page sample set,
+  which is disjoint from the demo pages and from training.
+
+**Keys:** 5 distinct keys are in `.env`, from different accounts except
+1 and 5 (same account, separate projects). Free-tier quota is metered
+per project, so extra keys in one project add nothing. Two lines in
+`.env` were both named `GEMINI_API_KEY_4`, so one key was silently
+overwritten — if a key seems to be missing, check for a duplicated
+name first.
+
 ## 6. Day by day
 
 ### Day 1 (Oct 9) — labels + go/no-go

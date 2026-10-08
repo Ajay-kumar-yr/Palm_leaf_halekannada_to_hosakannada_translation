@@ -83,6 +83,10 @@ def main() -> None:
                    help="Reject crops this many MADs from the median chars-per-aspect-unit.")
     p.add_argument("--min-chars", type=int, default=8)
     p.add_argument("--out-name", default="train_labels.jsonl")
+    p.add_argument("--holdout-every", type=int, default=0,
+                   help="Mark every Nth line of each page as held out (demo_split='holdout') "
+                       "instead of training data. 4 keeps a quarter of every page unseen. "
+                       "0 disables the split.")
     args = p.parse_args()
 
     manifest = {json.loads(l)["crop"]: json.loads(l)
@@ -162,6 +166,24 @@ def main() -> None:
                 counts["rejected_disagreement"] += 1
         rows = kept
 
+    # Demo hold-out. The demo is writer-dependent by decision
+    # (DEMO_PLAN.md 5b): the recogniser trains on lines from the very
+    # pages it will be shown on. The least it must do is show lines it
+    # never trained on, so every Nth line of each page -- by line_index,
+    # not by hash, so the held-out lines are spread evenly down the page
+    # rather than clumped -- is reserved for the demo.
+    n_holdout = 0
+    if args.holdout_every > 1:
+        per_page: dict[str, int] = {}
+        for r in sorted(rows, key=lambda r: (r["page"], r["crop"])):
+            k = per_page.get(r["page"], 0)
+            per_page[r["page"]] = k + 1
+            r["demo_split"] = "holdout" if k % args.holdout_every == args.holdout_every - 1 else "train"
+            n_holdout += int(r["demo_split"] == "holdout")
+    else:
+        for r in rows:
+            r["demo_split"] = "train"
+
     out_path = args.set_dir / args.out_name
     with out_path.open("w", encoding="utf-8") as f:
         for r in rows:
@@ -169,6 +191,9 @@ def main() -> None:
 
     results = {
         "n_kept": len(rows),
+        "n_holdout_for_demo": n_holdout,
+        "n_train": len(rows) - n_holdout,
+        "holdout_every": args.holdout_every,
         "counts": counts,
         "length_band_chars_per_aspect": band,
         "primary_labeller": primary_name,
@@ -184,12 +209,13 @@ def main() -> None:
     run_dir = start_run("build_label_set", {
         "seed": SEED, "set_dir": str(args.set_dir), "labels": args.labels, "group": args.group,
         "max_disagreement": args.max_disagreement, "length_mad": args.length_mad,
-        "min_chars": args.min_chars,
+        "min_chars": args.min_chars, "holdout_every": args.holdout_every,
     })
     finish_run(run_dir, results)
 
     print(json.dumps({k: results[k] for k in
-                      ("n_kept", "counts", "length_band_chars_per_aspect", "n_cross_checked",
+                      ("n_kept", "n_train", "n_holdout_for_demo", "counts",
+                       "length_band_chars_per_aspect", "n_cross_checked",
                        "mean_disagreement", "total_chars")}, indent=2))
     print(f"-> {out_path}\nRun folder: {run_dir}")
 

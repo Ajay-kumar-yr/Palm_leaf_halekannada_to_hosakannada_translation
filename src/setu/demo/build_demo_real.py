@@ -93,6 +93,9 @@ def sample_readings(ring: KeyRing, model: str, png: bytes, n: int, temperature: 
                         time.sleep(min(20, 2 * 2 ** attempt))
                     continue
                 if e.code in (500, 502, 503):
+                    # 503 is per-routing, not per-key-quota: rotate rather
+                    # than hammer one key that happens to be unlucky.
+                    ring.advance()
                     time.sleep(min(20, 2 * 2 ** attempt))
                     continue
                 raise

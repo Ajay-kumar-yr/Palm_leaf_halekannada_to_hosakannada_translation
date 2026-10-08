@@ -64,6 +64,10 @@ def read_once(ring, model, png, temperature=0.0):
                     time.sleep(min(20, 2 * 2 ** attempt))
                 continue
             if e.code in (500, 502, 503):
+                # 503 is "model overloaded", and it is not uniform across
+                # keys -- some route to capacity and some do not. Retrying
+                # the SAME key five times just fails five times.
+                ring.advance()
                 time.sleep(min(20, 2 * 2 ** attempt))
                 continue
             raise
@@ -106,7 +110,7 @@ def main() -> None:
             png = (REPO_ROOT / src["image"]).read_bytes()
             text = read_once(ring, args.model, png)
             if text is None:
-                print("  all keys exhausted; stopping")
+                print("  giving up on this line: quota spent, or the model kept refusing")
                 crops = crops[:i]
                 break
             text = normalise(text)

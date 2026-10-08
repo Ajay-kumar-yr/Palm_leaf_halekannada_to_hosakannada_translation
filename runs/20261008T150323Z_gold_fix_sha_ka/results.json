@@ -1,0 +1,18 @@
+{
+  "n_lines": 32,
+  "n_sha_to_ka_swapped": 24,
+  "as_typed": {
+    "mean_cer": 0.3885562846239365,
+    "median_cer": 0.37298387096774194
+  },
+  "machine_agreed": {
+    "mean_cer": 0.3730309316505482,
+    "median_cer": 0.3634823848238482
+  },
+  "blanket": {
+    "mean_cer": 0.3703869775771659,
+    "median_cer": 0.3608834244080146
+  },
+  "caveat": "machine_agreed locates swaps by the machine's own output, so a CER against it is not independent of the system scored; blanket is the machine-independent figure.",
+  "output": "data\\real_lines\\gold\\gold_lines_corrected.jsonl"
+}

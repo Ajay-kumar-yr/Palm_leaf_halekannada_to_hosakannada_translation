@@ -113,6 +113,7 @@ def modernize(text_block: str, branch: str, model: str, cache_dir: Path,
                     time.sleep(min(30, 5 * 2 ** attempt))
                 continue
             if e.code in (500, 502, 503):
+                ring.advance()
                 time.sleep(min(30, 5 * 2 ** attempt))
                 continue
             raise

@@ -1,5 +1,8 @@
 # SETU — status, findings and next steps
 
+> **2026-10-08: read `DEMO_PLAN.md` first.** It holds the current 4-day
+> plan and supersedes §4.2 below wherever they disagree.
+
 Written 2026-10-07 on the RTX 3060 machine. Read alongside `CLAUDE.md`
 (project rules) and `HANDOFF.md` (machine setup, now complete). Like
 `HANDOFF.md` this is session state, not a rules document — delete it when
@@ -20,6 +23,17 @@ a **task mismatch that predates this session**: the project title promises
 training targets are KannadaLit4NLP's **ಭಾವಾರ್ಥ (scholarly commentary)**,
 which shares only **6.8%** of its words with the source.
 
+**Update 2026-10-08 (laptop).** Two things resolved since the above.
+**§6.4 is done** — Palmira works on the laptop, 975 real line crops were
+cut, and the domain gap is now a measured number: mean top-1 confidence
+**0.9613 synthetic → 0.6265 real**, with **100% of real lines flagged**
+against 1.8% synthetic (§4.3). **And the recogniser cannot read real
+manuscripts at all** — its output on real crops is garbage, because S1
+trained it on font-rendered text over leaf texture in which real
+handwriting only ever appears as *background* (§4.3b). The demo
+therefore runs recognition on synthetic lines, with the real-page
+attempt shown beside it as the domain-gap result.
+
 **Update 2026-10-08:** the fallback recommended here — a forward
 rule-based orthographic modernizer — is **also dead**. The corpus carries
 no archaic orthography to normalise (§3.9): the three forward rules fire
@@ -38,12 +52,14 @@ where the project's genuine result lives.
 | Recogniser CER, frozen test split (all 1,358 lines) | **1.53%** | `20261007T151916Z_eval_b0_b3_b4` |
 | Recogniser CER, S1 validation split | **0.39%** | `20261006T120718Z_crnn_train_s1` |
 | Recogniser CER over all of S2 (3,500 lines) | 1.57% (median **0.00%**) | `20261007T022632Z_cache_s2_recogniser` |
-| Palmira line-segmentation success rate | **96.9%** over all 738 real HKHPL pages | `data/raw_corpus/palmira_survey_results.jsonl` |
+| Palmira line-segmentation success rate | **96.9%** over all 738 surveyed photos (**97.2%** over the 568 *distinct pages* — see §3.10) | `data/raw_corpus/palmira_survey_results.jsonl` |
 | Fake-vs-real classifier | **68.8%** test accuracy | `20261006T153251Z_fake_vs_real_classifier` |
 | CTC confidence distribution (real checkpoint) | mean top-1 **0.9606**; **11.69%** of frames below 0.9 | `20261006T152242Z_measure_confidence_distribution` |
 | Joint unlocked training | stable, recogniser never needed locking | `20261007T134952Z_joint_unlocked_train` |
 | POS tagging | 104 hand-applied tags | `src/setu/pos/` (earlier session) |
 | **Soft bridge, measured at frame level** | on frozen-test frames where top-1 was wrong, the correct symbol was still in the top-5 **80.6%** of the time; bridge carries it with mean weight **0.200**, argmax with **0.000** | `20261008T033215Z_recovery_examples` |
+| Palmira line crops from real pages | 263 (14 demo pages) + 712 (50 sample pages) | `20261008T055116Z_palmira_line_crops` |
+| **§6.4 domain gap, real vs synthetic** | mean top-1 confidence **0.9613 → 0.6265**; flagged lines **1.8% → 100%** | `20261008T061052Z_real_vs_synthetic_confidence` |
 
 ### CRNN training, 12 epochs total
 
@@ -233,6 +249,25 @@ out at 796 chars, so the 186 lines exceeding `MAX_LEN=2048` drop to zero.
 - **WSL2 networking on this machine corrupts large downloads.** See
   `HANDOFF.md` for the full write-up; the working fix is to retry the
   install in a loop (torch took 8 attempts).
+
+### 3.10 The "738 unique photos" are 568 distinct pages (2026-10-08)
+
+Found while drawing the §6.4 sample. The page survey deduped by photo
+signature (width, height, sharpness, contrast, brightness), which
+correctly collapses the train/val/test mirrors but **cannot see
+`dataset/hd_images/`** — 170 higher-resolution re-photographs of pages
+that are already in `Dataset/`. Their resolution differs, so their
+signature differs.
+
+So the 738 are **568 distinct pages + 170 hd duplicates**. The headline
+number barely moves (552/568 = **97.2%** over distinct pages vs 96.9%
+over all 738), so nothing reported is wrong — but the *wording* is:
+"738 pages" should read "738 photos of 568 pages", or quote 97.2%.
+
+`run_palmira_crops.py` dedupes by page stem and prefers the standard
+`Dataset/` copy, so the 50-page §6.4 sample is 50 genuinely distinct
+pages. The first attempt sampled three pages twice; that run was deleted
+and redone rather than patched.
 
 ### 3.9 The corpus contains no archaic orthography at all (2026-10-08)
 
@@ -426,7 +461,80 @@ explicitly in the report." Keep that disclosure, and have the answer to
 *"is that a held-out example?"* ready — being unable to answer it is what
 damages you, not the curation itself.
 
-### 4.3 §6.4 real-imagery measurements — BLOCKED
+### 4.3 §6.4 real-imagery measurements — DONE (2026-10-08, on the laptop)
+
+**Unblocked and completed.** Palmira was never rebuilt on the 3060; the
+work moved to the laptop, where the `palmira` conda env still imports
+(detectron2 0.4, CUDA, the DefGrid extension) and the weights are intact.
+
+`data/raw_corpus/run_palmira_crops.py` (new) cuts line crops from the
+original colour photos, writing a mask-filled crop and a raw
+bounding-box crop per detected `Character Line Segment`, plus a manifest
+with box/score/area/centroid. Run `20261008T055116Z_palmira_line_crops`:
+
+| Set | Pages | Line crops |
+|---|---|---|
+| `demo` (the 14 files in `demo_pages/`) | 14 | 263 |
+| `sample` (seeded, disjoint from demo) | 50 | 712 |
+
+Crops are gitignored (`data/real_lines/`). The sample excludes any page
+sharing a filename stem or photo signature with a demo page, asserted in
+code — rule 8.
+
+**All three measurements now exist:**
+
+1. line-segmentation success rate — 96.9% over 738 pages (earlier)
+2. **recogniser top-1 confidence, real vs synthetic — done**
+3. **flagging rate, real vs synthetic — done**
+
+Run `20261008T061052Z_real_vs_synthetic_confidence`, 712 real crops
+against the 1,055-line S1 validation split:
+
+| | mean top-1 | frames < 0.9 | lines flagged (t=0.85) |
+|---|---|---|---|
+| synthetic (S1 val) | **0.9613** | 11.5% | **1.8%** |
+| real (`crop:as_is`) | **0.6265** | 79.8% | **100%** |
+
+**Every single real line is flagged at every threshold tested**
+(0.75/0.80/0.85/0.90); real per-line confidence spans 0.57–0.71 and
+never once reaches the synthetic median of 0.966. That is the §6.4
+domain-gap number, obtained with zero transcriptions.
+
+Measured in **four** conditions so it cannot be waved away as a
+preprocessing artifact — mask-filled vs raw bounding box, native
+resolution vs resized to the renderer's nominal 64px line height. All
+four land in 0.6254–0.6352. Inverted polarity was also checked by hand
+and is no better. 12 of 712 crops are under the architecture's 32px
+minimum (five height-pooling stages) and are padded, not dropped, and
+counted in `n_padded_to_min_height`.
+
+The synthetic half agrees with the committed 3060 baseline to +0.0006
+mean top-1 — but on **this laptop's own S1 render**, not the same image
+files (585,505 frames vs 586,747). See the run folder's `NOTES.md`; read
+it as agreement across two independent renders, which is the stronger
+claim, not as bit-exact reproduction.
+
+### 4.3b What the recogniser actually says on real lines
+
+Worth stating plainly because it decides the demo (§4.2 step 2). The
+decoded output on real crops is **not degraded text, it is garbage** —
+strings like `ಅಅಅನನ ಅಲ್ಲ್ನಅರಅಅವಾ`, dominated by repeated ಅ, on lines
+Palmira segmented with score 0.99.
+
+This should not be surprising, and the report should say so rather than
+present it as a shock: **S1 trains the CRNN on crisp font-rendered text
+composited onto real leaf texture.** Those texture patches are cut from
+real HKHPL photos and visibly contain real handwriting — which is always
+*background*, never the target. The model was therefore trained, for
+23,346 lines, to read rendered glyphs and ignore handwriting. Real crops
+are nothing but handwriting. The 1.53% synthetic CER and this result are
+consistent: the recogniser reads the font it was shown.
+
+Consequence: **the §4.2 contingency fires — demo act 1 runs on synthetic
+lines**, with the real-page attempt shown beside it as the measured
+domain gap. Do not promise real-page recognition.
+
+### 4.3c (superseded) §6.4 real-imagery measurements — was BLOCKED
 
 Three label-free measurements (no transcriptions of real HKHPL lines exist,
 so CER on real images is impossible):

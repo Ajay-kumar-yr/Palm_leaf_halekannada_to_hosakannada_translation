@@ -1,0 +1,658 @@
+{
+  "demo": {
+    "n_pages": 14,
+    "n_lines": 263,
+    "pages_with_zero_lines": [],
+    "cpu_fallback_pages": [],
+    "pages": [
+      {
+        "page": "group1_1.128",
+        "device": "cuda",
+        "seconds": 1.43,
+        "n_lines": 30,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "group1_1.198",
+        "device": "cuda",
+        "seconds": 1.31,
+        "n_lines": 27,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "group1_1.26",
+        "device": "cuda",
+        "seconds": 1.27,
+        "n_lines": 29,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "group1_1.28",
+        "device": "cuda",
+        "seconds": 1.15,
+        "n_lines": 30,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "group2_2.15",
+        "device": "cuda",
+        "seconds": 0.58,
+        "n_lines": 10,
+        "image_shape": [
+          698,
+          2153
+        ]
+      },
+      {
+        "page": "group2_2.164",
+        "device": "cuda",
+        "seconds": 0.6,
+        "n_lines": 11,
+        "image_shape": [
+          804,
+          2496
+        ]
+      },
+      {
+        "page": "group2_2.66",
+        "device": "cuda",
+        "seconds": 0.5,
+        "n_lines": 11,
+        "image_shape": [
+          833,
+          2527
+        ]
+      },
+      {
+        "page": "group2_2.67",
+        "device": "cuda",
+        "seconds": 0.46,
+        "n_lines": 10,
+        "image_shape": [
+          833,
+          2333
+        ]
+      },
+      {
+        "page": "group3_3.157",
+        "device": "cuda",
+        "seconds": 0.88,
+        "n_lines": 8,
+        "image_shape": [
+          842,
+          3872
+        ]
+      },
+      {
+        "page": "group3_3.21",
+        "device": "cuda",
+        "seconds": 0.35,
+        "n_lines": 9,
+        "image_shape": [
+          565,
+          2714
+        ]
+      },
+      {
+        "page": "group3_3.50",
+        "device": "cuda",
+        "seconds": 0.36,
+        "n_lines": 6,
+        "image_shape": [
+          442,
+          2674
+        ]
+      },
+      {
+        "page": "group4_4.71",
+        "device": "cuda",
+        "seconds": 1.26,
+        "n_lines": 28,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "group4_4.75",
+        "device": "cuda",
+        "seconds": 1.35,
+        "n_lines": 24,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "group4_4.80",
+        "device": "cuda",
+        "seconds": 1.7,
+        "n_lines": 30,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      }
+    ]
+  },
+  "sample": {
+    "n_pages": 50,
+    "n_lines": 712,
+    "pages_with_zero_lines": [],
+    "cpu_fallback_pages": [],
+    "pages": [
+      {
+        "page": "1.10",
+        "device": "cuda",
+        "seconds": 1.19,
+        "n_lines": 27,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "2.1",
+        "device": "cuda",
+        "seconds": 0.62,
+        "n_lines": 10,
+        "image_shape": [
+          847,
+          2498
+        ]
+      },
+      {
+        "page": "3.12",
+        "device": "cuda",
+        "seconds": 0.21,
+        "n_lines": 9,
+        "image_shape": [
+          396,
+          1952
+        ]
+      },
+      {
+        "page": "4.14",
+        "device": "cuda",
+        "seconds": 0.52,
+        "n_lines": 1,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.16",
+        "device": "cuda",
+        "seconds": 0.96,
+        "n_lines": 19,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.106",
+        "device": "cuda",
+        "seconds": 1.31,
+        "n_lines": 25,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.120",
+        "device": "cuda",
+        "seconds": 1.09,
+        "n_lines": 27,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.144",
+        "device": "cuda",
+        "seconds": 1.13,
+        "n_lines": 29,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.148",
+        "device": "cuda",
+        "seconds": 1.18,
+        "n_lines": 27,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.152",
+        "device": "cuda",
+        "seconds": 0.84,
+        "n_lines": 4,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.160",
+        "device": "cuda",
+        "seconds": 0.96,
+        "n_lines": 23,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.164",
+        "device": "cuda",
+        "seconds": 1.08,
+        "n_lines": 22,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.74",
+        "device": "cuda",
+        "seconds": 1.14,
+        "n_lines": 25,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.76",
+        "device": "cuda",
+        "seconds": 1.08,
+        "n_lines": 24,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.80",
+        "device": "cuda",
+        "seconds": 0.92,
+        "n_lines": 25,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "1.90",
+        "device": "cuda",
+        "seconds": 0.95,
+        "n_lines": 26,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "2.141",
+        "device": "cuda",
+        "seconds": 0.59,
+        "n_lines": 13,
+        "image_shape": [
+          849,
+          2494
+        ]
+      },
+      {
+        "page": "2.155",
+        "device": "cuda",
+        "seconds": 0.49,
+        "n_lines": 10,
+        "image_shape": [
+          832,
+          2472
+        ]
+      },
+      {
+        "page": "2.170",
+        "device": "cuda",
+        "seconds": 0.45,
+        "n_lines": 10,
+        "image_shape": [
+          844,
+          2488
+        ]
+      },
+      {
+        "page": "2.174",
+        "device": "cuda",
+        "seconds": 0.45,
+        "n_lines": 10,
+        "image_shape": [
+          820,
+          2472
+        ]
+      },
+      {
+        "page": "2.191",
+        "device": "cuda",
+        "seconds": 0.49,
+        "n_lines": 11,
+        "image_shape": [
+          852,
+          2506
+        ]
+      },
+      {
+        "page": "2.196",
+        "device": "cuda",
+        "seconds": 0.4,
+        "n_lines": 10,
+        "image_shape": [
+          830,
+          2459
+        ]
+      },
+      {
+        "page": "2.28",
+        "device": "cuda",
+        "seconds": 0.45,
+        "n_lines": 10,
+        "image_shape": [
+          832,
+          2478
+        ]
+      },
+      {
+        "page": "2.37",
+        "device": "cuda",
+        "seconds": 0.47,
+        "n_lines": 10,
+        "image_shape": [
+          822,
+          2448
+        ]
+      },
+      {
+        "page": "2.38",
+        "device": "cuda",
+        "seconds": 0.55,
+        "n_lines": 11,
+        "image_shape": [
+          854,
+          2479
+        ]
+      },
+      {
+        "page": "2.60",
+        "device": "cuda",
+        "seconds": 0.45,
+        "n_lines": 10,
+        "image_shape": [
+          852,
+          2477
+        ]
+      },
+      {
+        "page": "2.84",
+        "device": "cuda",
+        "seconds": 0.45,
+        "n_lines": 10,
+        "image_shape": [
+          824,
+          2506
+        ]
+      },
+      {
+        "page": "2.91",
+        "device": "cuda",
+        "seconds": 0.5,
+        "n_lines": 12,
+        "image_shape": [
+          854,
+          2514
+        ]
+      },
+      {
+        "page": "2.97",
+        "device": "cuda",
+        "seconds": 0.4,
+        "n_lines": 11,
+        "image_shape": [
+          840,
+          2488
+        ]
+      },
+      {
+        "page": "3.101",
+        "device": "cuda",
+        "seconds": 0.38,
+        "n_lines": 13,
+        "image_shape": [
+          464,
+          3168
+        ]
+      },
+      {
+        "page": "3.113",
+        "device": "cuda",
+        "seconds": 0.34,
+        "n_lines": 11,
+        "image_shape": [
+          451,
+          2632
+        ]
+      },
+      {
+        "page": "3.119",
+        "device": "cuda",
+        "seconds": 1.98,
+        "n_lines": 11,
+        "image_shape": [
+          2901,
+          3877
+        ]
+      },
+      {
+        "page": "3.122",
+        "device": "cuda",
+        "seconds": 0.3,
+        "n_lines": 9,
+        "image_shape": [
+          399,
+          1944
+        ]
+      },
+      {
+        "page": "3.147",
+        "device": "cuda",
+        "seconds": 0.25,
+        "n_lines": 8,
+        "image_shape": [
+          477,
+          1958
+        ]
+      },
+      {
+        "page": "3.154",
+        "device": "cuda",
+        "seconds": 0.19,
+        "n_lines": 6,
+        "image_shape": [
+          387,
+          1951
+        ]
+      },
+      {
+        "page": "3.190",
+        "device": "cuda",
+        "seconds": 0.21,
+        "n_lines": 8,
+        "image_shape": [
+          408,
+          1952
+        ]
+      },
+      {
+        "page": "3.30",
+        "device": "cuda",
+        "seconds": 0.23,
+        "n_lines": 5,
+        "image_shape": [
+          319,
+          1944
+        ]
+      },
+      {
+        "page": "3.36",
+        "device": "cuda",
+        "seconds": 0.25,
+        "n_lines": 8,
+        "image_shape": [
+          367,
+          1973
+        ]
+      },
+      {
+        "page": "3.55",
+        "device": "cuda",
+        "seconds": 0.27,
+        "n_lines": 9,
+        "image_shape": [
+          372,
+          1964
+        ]
+      },
+      {
+        "page": "3.73",
+        "device": "cuda",
+        "seconds": 0.25,
+        "n_lines": 7,
+        "image_shape": [
+          336,
+          1966
+        ]
+      },
+      {
+        "page": "3.87",
+        "device": "cuda",
+        "seconds": 1.33,
+        "n_lines": 10,
+        "image_shape": [
+          2901,
+          3877
+        ]
+      },
+      {
+        "page": "4.102",
+        "device": "cuda",
+        "seconds": 0.61,
+        "n_lines": 8,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.152",
+        "device": "cuda",
+        "seconds": 0.73,
+        "n_lines": 24,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.161",
+        "device": "cuda",
+        "seconds": 0.81,
+        "n_lines": 26,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.183",
+        "device": "cuda",
+        "seconds": 0.72,
+        "n_lines": 20,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.25",
+        "device": "cuda",
+        "seconds": 0.52,
+        "n_lines": 8,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.47",
+        "device": "cuda",
+        "seconds": 0.6,
+        "n_lines": 12,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.58",
+        "device": "cuda",
+        "seconds": 1.03,
+        "n_lines": 18,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.64",
+        "device": "cuda",
+        "seconds": 0.74,
+        "n_lines": 18,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      },
+      {
+        "page": "4.91",
+        "device": "cuda",
+        "seconds": 0.57,
+        "n_lines": 12,
+        "image_shape": [
+          1536,
+          2048
+        ]
+      }
+    ]
+  }
+}

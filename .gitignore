@@ -32,3 +32,5 @@ data/real_lines/
 .env
 data/real_lines/gold_raw/
 data/glyph_bank/
+data/real_lines/gold_bin/
+data/real_lines/gold_unet/

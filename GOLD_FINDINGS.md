@@ -159,9 +159,46 @@ none of the flow of the real line beside it. A recogniser trained on
 that would learn that characters are separated by seams — which real
 lines are not.
 
-**Verdict: a real direction, not a three-day one.** The obvious next
-steps if anyone picks it up are per-glyph background normalisation (the
-seams are largely a brightness mismatch) and blending at the joins. The
-character shapes themselves are sound. `src/setu/render/glyphs.py` is
-kept, with `--midpoint` and the margin controls, so the experiment is
+### 4a. Binarizing first removes the seams — and exposes the next problem
+
+The conclusion above blamed the seams on a brightness mismatch, so the
+obvious follow-up was to binarize before cutting. Done, and it works:
+**the seams are gone.** Glyphs cut from binarized lines stitch onto a
+uniform white ground with no visible join.
+
+Two binarizers were compared on the same line. **HKHPL's own
+`Ground_Truth_images` are not usable here** — they cover only 3 of the 7
+gold pages, and on `1.108` a large black blob swallows a third of the
+line (ink fraction 0.411 against the U-Net's 0.134). The **Sajjan U-Net**
+already in the repo (`data/external_models/sajjan_unet`, trained on this
+dataset) produces clean, crisp ink on white across every crop, and is
+clearly the better choice. All 32 gold lines were binarized with it; a
+recogniser overfit on them reaches loss 0.0122 and force-aligns all 32,
+giving the same 1,787 glyphs over 49 symbols.
+
+The pixel probe barely moves (1-NN 0.126 against grayscale's 0.145,
+top-5 0.344 against 0.351) — binarization strips the leaf texture the
+probe was partly keying on, so this is not evidence either way.
+
+**What the stitched line now shows** is the real remaining obstacle:
+characters sit at inconsistent heights, spacing is irregular, and
+fragments of neighbouring ink still ride along at the cuts. The real
+line flows along a baseline; the stitched one bounces.
+
+**Verdict: stop here, but the direction is sound.** Each fix exposes the
+next problem — seams gone, baseline jitter and neighbour fragments
+remain — and the last of those is structural: in connected cursive the
+ink genuinely overlaps, and no vertical cut separates it. Baseline
+alignment (match each glyph's ink centroid) and seam blending are the
+next steps for anyone picking this up, and they may well be enough. With
+the deadline where it is, the time belongs on the demo.
+
+**A finding worth keeping regardless of the glyph idea:** the Sajjan
+U-Net turns these crops into clean ink on white. Whether that *helps the
+recogniser read real lines* is untested and cheap to test, and needs
+held-out binarized lines — one more reason the next batch of hand
+transcriptions should be a clean test set.
+
+`src/setu/render/glyphs.py` (with `--midpoint` and margin controls) and
+`data/raw_corpus/binarize_lines.py` are kept, so all of this is
 reproducible rather than merely described.

@@ -1,0 +1,21 @@
+{
+  "seed": 0,
+  "labels": [
+    "data/real_lines/gold_unet/gold_train.jsonl"
+  ],
+  "resume_from": "runs/20261006T120718Z_crnn_train_s1/best_model.pt",
+  "n_real_train": 32,
+  "n_real_val": 0,
+  "epochs": 80,
+  "lr": 0.0003,
+  "limit_train": null,
+  "replay_ratio": null,
+  "val_fraction": 0.0,
+  "line_height": 64,
+  "vocabulary": "EXTENDED (with Kannada digits)",
+  "n_classes": 67,
+  "split": "demo hold-out (demo_split field)",
+  "max_pixels_per_batch": 2200000,
+  "device": "cuda",
+  "label_provenance": "vision-LLM transcriptions filtered by setu.label.build_label_set -- NO human verification; real CER below is against machine labels"
+}

@@ -1,0 +1,11 @@
+{
+  "seed": 0,
+  "gold_dir": "data/real_lines/gold_raw/transcriptions",
+  "labels": [
+    "data/real_lines/train/train_labels.jsonl",
+    "data/real_lines/demo/demo_labels.jsonl"
+  ],
+  "checkpoint": "runs/20261008T104839Z_crnn_finetune_real/best_model.pt",
+  "normalisation": "NFC + collapsed whitespace",
+  "provenance": "32 held-out lines transcribed by hand, blind to the machine reading"
+}

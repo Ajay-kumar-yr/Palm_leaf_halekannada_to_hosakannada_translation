@@ -1,0 +1,31 @@
+{
+  "n_gold": 32,
+  "n_compared": 32,
+  "machine_vs_gold": {
+    "mean_cer": 0.3885562846239365,
+    "median_cer": 0.37298387096774194,
+    "min": 0.19298245614035087,
+    "max": 0.8181818181818182,
+    "n_within_0.35": 13
+  },
+  "archaic_letters": {
+    "ra-archaic": {
+      "in_gold": 6,
+      "gold_lines": 4,
+      "in_machine_label": 0
+    },
+    "zha-archaic": {
+      "in_gold": 0,
+      "gold_lines": 0,
+      "in_machine_label": 0
+    }
+  },
+  "caveat": "gold is a single blind transcription by one reader, not double-annotated: ground truth for this project's purposes, but it carries its own error rate.",
+  "crnn_vs_gold": {
+    "checkpoint": "runs/20261008T104839Z_crnn_finetune_real/best_model.pt",
+    "mean_cer": 0.6872233076863782,
+    "median_cer": 0.6840681203246857,
+    "n": 32,
+    "n_skipped_unencodable": 0
+  }
+}

@@ -1,7 +1,11 @@
 # SETU — status, findings and next steps
 
-> **2026-10-08: read `DEMO_PLAN.md` first.** It holds the current 4-day
-> plan and supersedes §4.2 below wherever they disagree.
+> **2026-10-08: read `GOLD_FINDINGS.md` and `DEMO_PLAN.md` first.**
+> `GOLD_FINDINGS.md` reports 32 hand-transcribed real lines, which
+> **answer §3.9's open question** (the real leaves DO carry ಱ, in 1 line
+> in 8, and the vision labeller erases every one) and show the machine
+> labels are ~39% wrong. `DEMO_PLAN.md` holds the current plan and
+> supersedes §4.2 below wherever they disagree.
 
 Written 2026-10-07 on the RTX 3060 machine. Read alongside `CLAUDE.md`
 (project rules) and `HANDOFF.md` (machine setup, now complete). Like
@@ -314,7 +318,17 @@ Consequences:
 - It partly explains the 1.53% CER: modern-orthography text in a modern
   font is an easier read than true halekannada.
 
-**The open question, and it is cheap to settle:** do the real HKHPL
+**ANSWERED 2026-10-08 — yes, they do.** A Kannada reader transcribed 32
+held-out real lines blind: **ಱ appears 6 times across 4 of the 32
+lines**, and the vision model's labels for those same lines contain
+**zero**. So the finding below is a property of the *corpus*, not of the
+collection: our training text is old language in modern orthography, but
+the leaves themselves carry the archaism. `CLAUDE.md`'s original
+instinct about ಱ/ೞ was right, and the machine-labelling route erases
+exactly the letters the project is about. See `GOLD_FINDINGS.md` §1.
+ೞ did not appear in these 32 lines; a larger sample may yet show it.
+
+**The original question, now settled:** do the real HKHPL
 manuscripts actually contain ಱ/ೞ? An hour of a Kannada reader's time over
 five pages decides it. If **yes**, we have a sharp, honest domain-gap
 finding for §6.4. If **no**, the title's task does not exist for this

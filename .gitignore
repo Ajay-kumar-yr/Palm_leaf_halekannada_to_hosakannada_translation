@@ -30,3 +30,4 @@ modrenizer_s3_pretrain/
 transfer_to_laptop/
 data/real_lines/
 .env
+data/real_lines/gold_raw/

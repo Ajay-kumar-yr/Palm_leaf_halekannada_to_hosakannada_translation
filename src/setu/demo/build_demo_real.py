@@ -292,6 +292,14 @@ def main() -> None:
                 {"index": s["index"], "chosen": s["chosen"], "top1": s["agreement"],
                  "alternatives": s["alternatives"][:4]} for s in unc[:10]
             ],
+            # The display list above is capped for the viewer; analysis
+            # needs every contested position, or a recovery measured
+            # against it is silently understated (it read 9.6% instead of
+            # the true 34.2% the first time).
+            "uncertain_all": [
+                {"index": s["index"], "chosen": s["chosen"], "top1": s["agreement"],
+                 "alternatives": s["alternatives"]} for s in unc
+            ],
             "samples": texts,
         }
         if not args.no_llm:

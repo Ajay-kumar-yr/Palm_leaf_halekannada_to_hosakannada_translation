@@ -1,0 +1,15 @@
+{
+  "n_lines": 6,
+  "n_heldout": 6,
+  "mean_fraction_uncertain": 0.5276392467181941,
+  "mean_sample_disagreement": 0.37866666666666665,
+  "n_lines_with_uncertain_chars": 6,
+  "n_branches_differ": 5,
+  "n_api_calls": 42,
+  "caveats": [
+    "Uncertainty is an ENSEMBLE over repeated vision-model readings, not the CTC soft bridge. Same claim, different mechanism.",
+    "The recogniser here is a vision LLM, not the project's CRNN, which cannot read real crops (0.70 CER; see the data-scaling curve).",
+    "The modernizer is an LLM, not the project's own model.",
+    "No ground truth: these lines have no human transcription yet, so no CER is reported."
+  ]
+}

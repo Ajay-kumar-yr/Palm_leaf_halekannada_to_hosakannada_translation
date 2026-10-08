@@ -1,0 +1,1638 @@
+[
+  {
+    "crop": "group1_1.128/line_03.png",
+    "page": "group1_1.128",
+    "image": "data/real_lines/gold_unet/group1_1.128/line_03.png",
+    "trained": false,
+    "label_text": "ತನು। ಆಡುಗವನು। ಈಮುನಿಯಕಪ್ಪಿನುವಯಜಮನನಕ್ರೈಯುವಿಮ",
+    "cer_vs_label": null,
+    "b3_text": "ರನುಆಡದಗವನು ಈಮನೀಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿಮ",
+    "b4_block": "reading: ರನುಆಡದಗವನು ಈಮನೀಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿಮ\nthe recogniser was undecided here; it also read:\n  ರನುಆಡದಗವನು ಈಮನಿಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿಮ  (0.60)\n  ರನುಆಡದಗವನು ಆಮನೀಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿಮ  (0.60)\n  ರನುಆಡದಗವನು ಈಮನೀಯಕಪ್ಟನುಪಯಜಮನನಕ್ಷೆ ಯವಿಮ  (0.40)\n  ರನುಆಡದಗವನು ಈಮನೀಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿು  (0.20)",
+    "rival_readings": [
+      {
+        "text": "ರನುಆಡದಗವನು ಈಮನೀಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿಮ",
+        "prob": 1.0
+      },
+      {
+        "text": "ರನುಆಡದಗವನು ಈಮನಿಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿಮ",
+        "prob": 0.6
+      },
+      {
+        "text": "ರನುಆಡದಗವನು ಆಮನೀಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿಮ",
+        "prob": 0.6
+      },
+      {
+        "text": "ರನುಆಡದಗವನು ಈಮನೀಯಕಪ್ಟನುಪಯಜಮನನಕ್ಷೆ ಯವಿಮ",
+        "prob": 0.4
+      },
+      {
+        "text": "ರನುಆಡದಗವನು ಈಮನೀಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿು",
+        "prob": 0.2
+      }
+    ],
+    "uncertainty": {
+      "n_chars": 38,
+      "n_uncertain": 17,
+      "fraction_uncertain": 0.4473684210526316,
+      "mean_top1": 0.8421,
+      "mean_sample_disagreement": 0.2995
+    },
+    "uncertain_chars": [
+      {
+        "index": 11,
+        "chosen": "ಈ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ಆ",
+            "symbol": "ಆ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ಈ",
+            "symbol": "ಈ",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 14,
+        "chosen": "ೀ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ೀ",
+            "symbol": "ೀ",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 33,
+        "chosen": " ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಱ",
+            "symbol": "ಱ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "೯",
+            "symbol": "೯",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ೕ",
+            "symbol": "ೕ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "chosen": "ನ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ನ",
+            "symbol": "ನ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ಮ",
+            "symbol": "ಮ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "chosen": "ಆ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಆ",
+            "symbol": "ಆ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ೀ",
+            "symbol": "ೀ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "chosen": "ಡ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಡ",
+            "symbol": "ಡ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ಉ",
+            "symbol": "ಉ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ದ",
+            "symbol": "ದ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 17,
+        "chosen": "ಪ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಪ",
+            "symbol": "ಪ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಷ",
+            "symbol": "ಷ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 19,
+        "chosen": "ಟ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಟ",
+            "symbol": "ಟ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ಷ",
+            "symbol": "ಷ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ತ",
+            "symbol": "ತ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 23,
+        "chosen": "ವ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 37,
+        "chosen": "ಮ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಮ",
+            "symbol": "ಮ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ು",
+            "symbol": "ು",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.2
+          }
+        ]
+      }
+    ],
+    "samples": [
+      "ರನು ಆಡದಗವನು ಈಮು ನಿಯಕ್ಷನೊವಯಜಮನನಕ್ಷೆ ಯವಿಮ",
+      "ರನುಆಡದವನು ಆಮನೀಯಕಷ್ಟುನುಪವಯಜಮನನಕ್ಷೆಱಯವಿದು",
+      "ರನುಆಡದಗವನು ಈಮನೀಯಕಪ್ಟನುಪವಯಜಮನನಕ್ಷೆ ಯವಿಮ",
+      "ರಮುಲೀಉದಗವನು ಆಮನಿಯಕಪ್ತನುಪಯಜಮನನಕ್ಷ್೯ಯವಿಮ",
+      "ರಮಿದಾಗವನು ಆಮನಿಯಕಪ್ಟನುಪಯಜಮನನಕ್ಷೇಯತಿವ"
+    ],
+    "b3_modern": "ರನು ಆಡದವನು ಈ ಮನೆಯ ಕಪಟ ಉಪಾಯ ಯಜಮಾನನ ಅಕ್ಷಯ ವಿಮ",
+    "b4_modern": "ರನು ಆಡದವನು ಈ ಮನೆಯ ಕಪಟನು ಪವಯಜಮಾನನ ಕ್ಷೇಮ",
+    "branches_differ": true
+  },
+  {
+    "crop": "group1_1.128/line_07.png",
+    "page": "group1_1.128",
+    "image": "data/real_lines/gold_unet/group1_1.128/line_07.png",
+    "trained": false,
+    "label_text": "ಶವಿಂದಬಾಣಿಸುದು। ಮುಂದಹುಳಿದಎಬ್ಬನೋಡುವದು। ಯೆಳ್ಳು",
+    "cer_vs_label": null,
+    "b3_text": "ಶರಿಂದ ಬಾಗಿಸುವುದು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು",
+    "b4_block": "reading: ಶರಿಂದ ಬಾಗಿಸುವುದು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು\nthe recogniser was undecided here; it also read:\n  ಶರಿಂದ ಬಾಗಿಸುವುದ। ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು  (0.60)\n  ಶರಿಂದ ಬಾಗಿಸುವು ು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು  (0.60)\n  ಶರಿಂದ ಬಾಗಿಸುದುದು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು  (0.60)\n  ಶರಿಂದ ಬಾಗಿಸುವುದು ಮುಂದವುಳಿದಎಬ್ಬನೋಡುವುದು ಯೆಳು  (0.40)",
+    "rival_readings": [
+      {
+        "text": "ಶರಿಂದ ಬಾಗಿಸುವುದು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು",
+        "prob": 1.0
+      },
+      {
+        "text": "ಶರಿಂದ ಬಾಗಿಸುವುದ। ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು",
+        "prob": 0.6
+      },
+      {
+        "text": "ಶರಿಂದ ಬಾಗಿಸುವು ು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು",
+        "prob": 0.6
+      },
+      {
+        "text": "ಶರಿಂದ ಬಾಗಿಸುದುದು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು",
+        "prob": 0.6
+      },
+      {
+        "text": "ಶರಿಂದ ಬಾಗಿಸುವುದು ಮುಂದವುಳಿದಎಬ್ಬನೋಡುವುದು ಯೆಳು",
+        "prob": 0.4
+      }
+    ],
+    "uncertainty": {
+      "n_chars": 44,
+      "n_uncertain": 16,
+      "fraction_uncertain": 0.36363636363636365,
+      "mean_top1": 0.8636,
+      "mean_sample_disagreement": 0.2478
+    },
+    "uncertain_chars": [
+      {
+        "index": 12,
+        "chosen": "ವ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "ದ",
+            "symbol": "ದ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "chosen": "ರ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ರ",
+            "symbol": "ರ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ದ",
+            "symbol": "ದ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 14,
+        "chosen": "ದ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ದ",
+            "symbol": "ದ",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 15,
+        "chosen": "ು",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "।",
+            "symbol": "।",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ು",
+            "symbol": "ು",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 0,
+        "chosen": "ಶ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಶ",
+            "symbol": "ಶ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ರ",
+            "symbol": "ರ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 5,
+        "chosen": " ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 22,
+        "chosen": "ು",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ು",
+            "symbol": "ು",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 26,
+        "chosen": " ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 30,
+        "chosen": "ಬ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಬ",
+            "symbol": "ಬ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ೆ",
+            "symbol": "ೆ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಧ",
+            "symbol": "ಧ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 8,
+        "chosen": "ಗ",
+        "top1": 0.8,
+        "alternatives": [
+          {
+            "kannada": "ಗ",
+            "symbol": "ಗ",
+            "prob": 0.8
+          },
+          {
+            "kannada": "ಣ",
+            "symbol": "ಣ",
+            "prob": 0.2
+          }
+        ]
+      }
+    ],
+    "samples": [
+      "ರದಿಂದ ಬಾಗಿಸುದು । ಮುಂದವುಳಿದ ಎಂಬೆನೋಡುವುದು । ಯೆಳು ೩",
+      "ರಿಂದ ಬಾಗಿ ಸುದು । ಮುಂದ ವಳಿದ ಎಬ್ಬ ನೋಡುವುದು । ಯೆಳು",
+      "ಶರಿಂದ ಬಾಗಿಸುವುದು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಯೆಳು",
+      "ಶವಿಂದಬಾಣಿಸುದು । ಮುಂದವುಳಿದಲಬ್ಧನೋಡುವುದು । ಯೆಳುೞ್ಮ",
+      "ಶವಿಂದಬಾಗಿಸುದು ಮುಂದವಳಿದಎಬ್ಬಸೋಡುವುದು ಯೆಳು"
+    ],
+    "b3_modern": "ಶರದಿಂದ ಬಾಗಿಸುವುದು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಏಳು",
+    "b4_modern": "ಶರದಿಂದ ಬಾಗಿಸುವುದು ಮುಂದವುಳಿದ ಎಬ್ಬನೋಡುವುದು ಏಳು",
+    "branches_differ": false
+  },
+  {
+    "crop": "group1_1.128/line_11.png",
+    "page": "group1_1.128",
+    "image": "data/real_lines/gold_unet/group1_1.128/line_11.png",
+    "trained": false,
+    "label_text": "ಬ್ದವನು ಯಶಡನು ಕುಡಿಪ ಯೆಂಪರಿಂದ ಞಾನಿ ಸನೋಡುವದು ॥ ೧೩ ॥",
+    "cer_vs_label": null,
+    "b3_text": "ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ॥೧॥",
+    "b4_block": "reading: ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ॥೧॥\nthe recogniser was undecided here; it also read:\n  ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದನ್ರಾಗಿಸನೋಡುವದದು ॥೧॥  (0.60)\n  ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ॥೧॥  (0.60)\n  ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ॥೧।  (0.40)\n  ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ೧೧॥  (0.40)",
+    "rival_readings": [
+      {
+        "text": "ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ॥೧॥",
+        "prob": 1.0
+      },
+      {
+        "text": "ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದನ್ರಾಗಿಸನೋಡುವದದು ॥೧॥",
+        "prob": 0.6
+      },
+      {
+        "text": "ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ॥೧॥",
+        "prob": 0.6
+      },
+      {
+        "text": "ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ॥೧।",
+        "prob": 0.4
+      },
+      {
+        "text": "ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ೧೧॥",
+        "prob": 0.4
+      }
+    ],
+    "uncertainty": {
+      "n_chars": 52,
+      "n_uncertain": 33,
+      "fraction_uncertain": 0.6346153846153846,
+      "mean_top1": 0.7769,
+      "mean_sample_disagreement": 0.3757
+    },
+    "uncertain_chars": [
+      {
+        "index": 20,
+        "chosen": "ಣ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ಣ",
+            "symbol": "ಣ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ತ",
+            "symbol": "ತ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 26,
+        "chosen": " ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "್",
+            "symbol": "್",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಪ",
+            "symbol": "ಪ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 33,
+        "chosen": "ನ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "ನ",
+            "symbol": "ನ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಥ",
+            "symbol": "ಥ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಗ",
+            "symbol": "ಗ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 37,
+        "chosen": "ಗ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "ಣ",
+            "symbol": "ಣ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಗ",
+            "symbol": "ಗ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ನ",
+            "symbol": "ನ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಸ",
+            "symbol": "ಸ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 27,
+        "chosen": "ವ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಲ",
+            "symbol": "ಲ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ು",
+            "symbol": "ು",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 32,
+        "chosen": " ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.6
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 36,
+        "chosen": "ಾ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ಾ",
+            "symbol": "ಾ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 49,
+        "chosen": "॥",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "॥",
+            "symbol": "॥",
+            "prob": 0.4
+          },
+          {
+            "kannada": "೧",
+            "symbol": "೧",
+            "prob": 0.4
+          },
+          {
+            "kannada": "।",
+            "symbol": "।",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 0,
+        "chosen": "ಛ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಛ",
+            "symbol": "ಛ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 21,
+        "chosen": "ೆ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ೆ",
+            "symbol": "ೆ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          }
+        ]
+      }
+    ],
+    "samples": [
+      "ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರೆಯಿಂವತ್ಲರಿಂದಥ್ರಾಣಿಸನೊಡುವುದದು ॥೧॥",
+      "ಛವನಯಶಡನುಕುದಿನೆತೆಯಿಂದಥಿ್ರಣಿಸನೋಡುವುದದು॥೧೧॥",
+      "ಛವನು ಯಶಡನು ಕುದಿದಿಪ್ರಣೆಯಿಂದ ವರಿಂದ ನ್ರಾಗಿಸನೋಡುವದದು ॥೧॥",
+      "ಭವವನು ಯಶಡನು ಕುದಿದಿಪ್ರಯಿಂದವರಿಂದಗ್ನಿಸನೋಡುವದದು ।।೧೧।",
+      "ಭವವನು ಯಶಡನು ಕುದಿದಿ ಪ್ರಯೊಂಪುರಿಂದ ್ಣಣಿಸಿ ನೋಯದುದು ।।೧೦।"
+    ],
+    "b3_modern": "ಅವನು ಯಶವಂತನಾಗಿ ಕುದುರೆಯನ್ನೇರಿ ಪ್ರೀತಿಯಿಂದ ವರವನ್ನು ನೀಡಲು ನೋಡುತ್ತಿದ್ದನು ॥೧॥",
+    "b4_modern": "ಛವನು ಯಶಡನು ಕುದಿದ ಪ್ರಣೆಯಿಂದ ವರಿಂದ ರಾಗಿಸ ನೋಡುವದು ॥೧॥",
+    "branches_differ": true
+  },
+  {
+    "crop": "group1_1.128/line_15.png",
+    "page": "group1_1.128",
+    "image": "data/real_lines/gold_unet/group1_1.128/line_15.png",
+    "trained": false,
+    "label_text": "ಈನಿಯೆಂಬುವದು ॥ ೨ ॥ ಯರಡು ವಳಿದರ ದುಮ್ರಯ ಆಮನಿ",
+    "cer_vs_label": null,
+    "b3_text": "ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಯ ಅಮನೈ",
+    "b4_block": "reading: ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಯ ಅಮನೈ\nthe recogniser was undecided here; it also read:\n  ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಯ ಅಮನಿ  (0.60)\n  ಈನಿ ಯೆಂಬುದು್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಯ ಅಮನೈ  (0.60)\n  ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಿ ಅಮನೈ  (0.40)\n  ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ರ ದುಮ್ಯಯ ಅಮನೈ  (0.40)",
+    "rival_readings": [
+      {
+        "text": "ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಯ ಅಮನೈ",
+        "prob": 1.0
+      },
+      {
+        "text": "ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಯ ಅಮನಿ",
+        "prob": 0.6
+      },
+      {
+        "text": "ಈನಿ ಯೆಂಬುದು್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಯ ಅಮನೈ",
+        "prob": 0.6
+      },
+      {
+        "text": "ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಿ ಅಮನೈ",
+        "prob": 0.4
+      },
+      {
+        "text": "ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ರ ದುಮ್ಯಯ ಅಮನೈ",
+        "prob": 0.4
+      }
+    ],
+    "uncertainty": {
+      "n_chars": 44,
+      "n_uncertain": 27,
+      "fraction_uncertain": 0.6136363636363636,
+      "mean_top1": 0.7773,
+      "mean_sample_disagreement": 0.419
+    },
+    "uncertain_chars": [
+      {
+        "index": 18,
+        "chosen": "೧",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "ರ",
+            "symbol": "ರ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "೧",
+            "symbol": "೧",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಲ",
+            "symbol": "ಲ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಯ",
+            "symbol": "ಯ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 43,
+        "chosen": "ೈ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ೈ",
+            "symbol": "ೈ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ೆ",
+            "symbol": "ೆ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 11,
+        "chosen": "ತ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ತ",
+            "symbol": "ತ",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 12,
+        "chosen": "್",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "್",
+            "symbol": "್",
+            "prob": 0.4
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 13,
+        "chosen": "ರ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ರ",
+            "symbol": "ರ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಯ",
+            "symbol": "ಯ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 20,
+        "chosen": "ಯ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ಯ",
+            "symbol": "ಯ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಎ",
+            "symbol": "ಎ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 25,
+        "chosen": "ು",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ು",
+            "symbol": "ು",
+            "prob": 0.4
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಉ",
+            "symbol": "ಉ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 14,
+        "chosen": "ಿ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 16,
+        "chosen": "೧",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "೧",
+            "symbol": "೧",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ಯ",
+            "symbol": "ಯ",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 21,
+        "chosen": "ರ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ರ",
+            "symbol": "ರ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ದ",
+            "symbol": "ದ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      }
+    ],
+    "samples": [
+      "ಈನಿ ಯೆಂಬುದು ಯ ರ ದು ವ ಳಿದ ರ ದು ಮ್ರ ಯಿ ಅ ಮ್ನಿ",
+      "ಈ ನಿ ಯೆಂ ಬು ವ ದು ಯಿ ಯ ರ ಡು ವ ಳಿ ದ ರ ದು ಮ್ಮ ಯಿ ಅ ಮ್ಮ ನಿ",
+      "ಈ ನೀಯೆಂಬುದುತ್ರಿ ೧ ಲೆಯೆರಡುವುಳಿದರ ೬ ದುಮ್ಯಯಿಆಮನೆ",
+      "ಈನಿ ಯೆಂಬುದುತ್ರಿ ೧ ೧ ಯರಡುವುಳಿದರ ೬ ದುಮ್ಯಯ ಅಮನೈ",
+      "ಈ ನಿ ಯೆಂಬುವದು ೧೧ ಯ ಎರಡು ಉಳಿದ ರ ೬ ದು ಮು ಯ ಅ ವ ಸ ನಿ"
+    ],
+    "b3_modern": "ಈನಿ ಎಂಬುದು ಮೂರು, ಎರಡು ಉಳಿದರೆ ಆರು ದುಮ್ಮಯ ಅಮನೈ.",
+    "b4_modern": "ಈನಿ ಎಂಬುದು ೧೧, ಎರಡು ಉಳಿದರೆ ೬, ದುಮ್ಮಯ ಅಮನೈ",
+    "branches_differ": true
+  },
+  {
+    "crop": "group1_1.128/line_28.png",
+    "page": "group1_1.128",
+    "image": "data/real_lines/gold_unet/group1_1.128/line_28.png",
+    "trained": false,
+    "label_text": "ಲಕಪ್ಪ ಘೋರಯದು ಬಮಕಪ್ಪ । ಇಂತಿ ೧೩ ದಿನದ ವನಶಕ",
+    "cer_vs_label": null,
+    "b3_text": "।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನ ನಶಕೌ",
+    "b4_block": "reading: ।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನ ನಶಕೌ\nthe recogniser was undecided here; it also read:\n  ।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವು ಇಂತಿ ಗನುದಿನ ನಶಕೌ  (0.60)\n  । ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನ ನಶಕೌ  (0.60)\n  ।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನ ನಶಕು  (0.40)\n  ।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನರನಶಕೌ  (0.40)",
+    "rival_readings": [
+      {
+        "text": "।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನ ನಶಕೌ",
+        "prob": 1.0
+      },
+      {
+        "text": "।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವು ಇಂತಿ ಗನುದಿನ ನಶಕೌ",
+        "prob": 0.6
+      },
+      {
+        "text": "। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನ ನಶಕೌ",
+        "prob": 0.6
+      },
+      {
+        "text": "।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನ ನಶಕು",
+        "prob": 0.4
+      },
+      {
+        "text": "।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನರನಶಕೌ",
+        "prob": 0.4
+      }
+    ],
+    "uncertainty": {
+      "n_chars": 38,
+      "n_uncertain": 24,
+      "fraction_uncertain": 0.631578947368421,
+      "mean_top1": 0.7053,
+      "mean_sample_disagreement": 0.5008
+    },
+    "uncertain_chars": [
+      {
+        "index": 20,
+        "chosen": "ೃ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "ು",
+            "symbol": "ು",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ೃ",
+            "symbol": "ೃ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಯ",
+            "symbol": "ಯ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 0,
+        "chosen": "।",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.6
+          },
+          {
+            "kannada": "।",
+            "symbol": "।",
+            "prob": 0.4
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "chosen": "।",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "।",
+            "symbol": "।",
+            "prob": 0.4
+          },
+          {
+            "kannada": "॥",
+            "symbol": "॥",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಱ",
+            "symbol": "ಱ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "chosen": " ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.4
+          },
+          {
+            "kannada": "್",
+            "symbol": "್",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 8,
+        "chosen": "ೂ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ೂ",
+            "symbol": "ೂ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಾ",
+            "symbol": "ಾ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಳ",
+            "symbol": "ಳ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ೋ",
+            "symbol": "ೋ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 15,
+        "chosen": "್",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "್",
+            "symbol": "್",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಲ",
+            "symbol": "ಲ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 16,
+        "chosen": "ರ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ರ",
+            "symbol": "ರ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಲ",
+            "symbol": "ಲ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ು",
+            "symbol": "ು",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 17,
+        "chosen": "ಮ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ಮ",
+            "symbol": "ಮ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ತ",
+            "symbol": "ತ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಷ",
+            "symbol": "ಷ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಪ",
+            "symbol": "ಪ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 19,
+        "chosen": "ವ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ತ",
+            "symbol": "ತ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಟ",
+            "symbol": "ಟ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 28,
+        "chosen": "ನ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ನ",
+            "symbol": "ನ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಣ",
+            "symbol": "ಣ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಮ",
+            "symbol": "ಮ",
+            "prob": 0.2
+          }
+        ]
+      }
+    ],
+    "samples": [
+      "॥ ವೃಷಭ ಫಾಳವದು ಬಲವತ್ತು ಇಂತಿ ಗಮೂದ್ರೆ ನನ ಶಕುಳು",
+      "ವೃಷಭಪೂರಯರು ಬಲಮಶವ್ಯ ಇಂತಿ ಗನುದೀಪ್ರನಶಕೌಸಿ",
+      "।। ವೃಷಭಪೂರವದು ಬ್ರಮಶವೃ ಇಂತಿ ಗನುದಿನ ನಶಕೌ",
+      "ಱ್ವ್ರ ಪೈಘೋಳ ವುದು ಬಲಕವ್ರಷ್ಟು ಇಂತಿ ಗಣುದ ಪ್ರನಶಕೂರು",
+      "।।ವೃಷಭಘೋರವದು ಬಲುಪಶು ಇಂತಿ ಗಣಾಧಿನನಶಕೌ"
+    ],
+    "b3_modern": "।। ವೃಷಭಪುರವದು ಬ್ರಹ್ಮಶಿವ ಇಂತು ಅನುದಿನ ನಶಕೌ",
+    "b4_modern": "।। ವೃಷಭಪುರದಲ್ಲಿ ಬ್ರಹ್ಮಶಿವನು ಹೀಗೆ ಅನುದಿನವೂ ನಶಕವು",
+    "branches_differ": true
+  },
+  {
+    "crop": "group1_1.198/line_03.png",
+    "page": "group1_1.198",
+    "image": "data/real_lines/gold_unet/group1_1.198/line_03.png",
+    "trained": false,
+    "label_text": "೧೪ ಯಲ್ಲಿನುರಿದಕಿ ಜಿವದಾನಕುರಿಯರುಗಳು೧೫ ಯಿದುನಿ",
+    "cer_vs_label": null,
+    "b3_text": "ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆಯದುನಿ",
+    "b4_block": "reading: ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆಯದುನಿ\nthe recogniser was undecided here; it also read:\n  ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆಿದುನಿ  (0.20)\n  ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆಂದುನಿ  (0.20)\n  ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆದುನಿ  (0.20)\n  ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯ ಯದುನಿ  (0.20)",
+    "rival_readings": [
+      {
+        "text": "ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆಯದುನಿ",
+        "prob": 1.0
+      },
+      {
+        "text": "ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆಿದುನಿ",
+        "prob": 0.2
+      },
+      {
+        "text": "ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆಂದುನಿ",
+        "prob": 0.2
+      },
+      {
+        "text": "ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆದುನಿ",
+        "prob": 0.2
+      },
+      {
+        "text": "ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯ ಯದುನಿ",
+        "prob": 0.2
+      }
+    ],
+    "uncertainty": {
+      "n_chars": 40,
+      "n_uncertain": 19,
+      "fraction_uncertain": 0.475,
+      "mean_top1": 0.82,
+      "mean_sample_disagreement": 0.4292
+    },
+    "uncertain_chars": [
+      {
+        "index": 8,
+        "chosen": "ಡ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "ಡ",
+            "symbol": "ಡ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          },
+          {
+            "kannada": "೭",
+            "symbol": "೭",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ದ",
+            "symbol": "ದ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 29,
+        "chosen": "ಷ",
+        "top1": 0.2,
+        "alternatives": [
+          {
+            "kannada": "ಷ",
+            "symbol": "ಷ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಘ",
+            "symbol": "ಘ",
+            "prob": 0.2
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 0,
+        "chosen": "ಯ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ಯ",
+            "symbol": "ಯ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          },
+          {
+            "kannada": "೦",
+            "symbol": "೦",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 16,
+        "chosen": "ಿ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.4
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "್",
+            "symbol": "್",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 17,
+        "chosen": "ತ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ತ",
+            "symbol": "ತ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ವ",
+            "symbol": "ವ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಯ",
+            "symbol": "ಯ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "್",
+            "symbol": "್",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 35,
+        "chosen": "ಯ",
+        "top1": 0.4,
+        "alternatives": [
+          {
+            "kannada": "ಯ",
+            "symbol": "ಯ",
+            "prob": 0.4
+          },
+          {
+            "kannada": "ಂ",
+            "symbol": "ಂ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 9,
+        "chosen": "ಿ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಿ",
+            "symbol": "ಿ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ಖ",
+            "symbol": "ಖ",
+            "prob": 0.2
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 13,
+        "chosen": "ಕ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ಕ",
+            "symbol": "ಕ",
+            "prob": 0.6
+          },
+          {
+            "kannada": "ತ",
+            "symbol": "ತ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 34,
+        "chosen": "ೆ",
+        "top1": 0.6,
+        "alternatives": [
+          {
+            "kannada": "ೆ",
+            "symbol": "ೆ",
+            "prob": 0.6
+          },
+          {
+            "kannada": " ",
+            "symbol": " ",
+            "prob": 0.2
+          },
+          {
+            "kannada": "(nothing)",
+            "symbol": "",
+            "prob": 0.2
+          }
+        ]
+      },
+      {
+        "index": 6,
+        "chosen": "ನ",
+        "top1": 0.8,
+        "alternatives": [
+          {
+            "kannada": "ನ",
+            "symbol": "ನ",
+            "prob": 0.8
+          },
+          {
+            "kannada": "ಸ",
+            "symbol": "ಸ",
+            "prob": 0.2
+          }
+        ]
+      }
+    ],
+    "samples": [
+      "ಂಬಿಯಲ್ಲಿಸುಖದಶಿಕ್ಷಿತವಾದನಾಶುರಿಯಯರುಘಳಳುಯೆಂದುನಿ",
+      "ಯ ಯಲ್ಲಿನು ೭ ದ ಶಿ ತ್ಪ ವ ದಾ ನ ಶು ರಿ ಯ ರ ು ರ ು ಗ ಳ ು ಯ ಯ ದು ನಿ",
+      "ಯಲ್ಲಿನುದಿರಶಿಷ್ಯವದಾನಕುರಿಯರುಗಳ್ಷುಯಿದು ನಿ",
+      "೦ಯಲ್ಲಿನುಱಿದಶಿಕ್ಷ್ವದಾನಶುರಿಯರುಬುಗಳಲ್ಲಿಯೆದುನಿ",
+      "ಯಯಲ್ಲಿನುಡಿದಶಿಕ್ಷಿತವದಾನಶುರಿಯರುಷಗಳುಯೆಯದುನಿ"
+    ],
+    "b3_modern": "ಯಯಲಿ ನುಡಿದ ಶಿಕ್ಷಿತ ಅವದಾನ ಶೂರಿಯರು ಋಷಿಗಳು ಎಯದು ನಿ",
+    "b4_modern": "ಯಯಲ್ಲಿ ನುಡಿದ ಶಿಕ್ಷಿತ ಅವದಾನ ಶೂರಿಯರುಷಗಳು ಎಂದು ನಿ",
+    "branches_differ": true
+  }
+]

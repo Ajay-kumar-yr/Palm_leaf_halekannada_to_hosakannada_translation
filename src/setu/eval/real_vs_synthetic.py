@@ -86,10 +86,25 @@ THRESHOLDS = (0.75, 0.80, 0.85, 0.90)
 BASELINE_RUN = "20261006T152242Z_measure_confidence_distribution"
 
 
-def load_real_crop(path: Path, scale: str) -> tuple[np.ndarray, bool]:
+_BINARIZER = [None]  # lazily built; the U-Net is 98 MB and most runs never need it
+
+
+def load_real_crop(path: Path, scale: str, binarize_unet: bool = False) -> tuple[np.ndarray, bool]:
     """Grayscale uint8, ink-dark-on-light -- the same polarity the renderer
     writes to disk (generate.py applies no inversion), so no inversion here."""
-    im = Image.open(path).convert("L")
+    if binarize_unet:
+        # Separates the two halves of the domain gap: binarizing removes
+        # the leaf TEXTURE, leaving only the difference in letter SHAPE
+        # (handwriting vs the rendered font S1 trained on).
+        import torch as _torch
+
+        from setu.demo.binarize import binarize as _bin, load_binarizer as _load
+        if _BINARIZER[0] is None:
+            _BINARIZER[0] = _load(device="cuda" if _torch.cuda.is_available() else "cpu")
+        dev = "cuda" if _torch.cuda.is_available() else "cpu"
+        im = Image.fromarray(_bin(Image.open(path), _BINARIZER[0], device=dev))
+    else:
+        im = Image.open(path).convert("L")
     if scale == "h64":
         w = max(WIDTH_DOWNSAMPLE, round(im.width * LINE_HEIGHT / im.height))
         im = im.resize((w, LINE_HEIGHT), Image.LANCZOS)
@@ -144,12 +159,13 @@ def finalize(stats: dict) -> dict:
 
 
 @torch.no_grad()
-def measure_real(model, device, records, root: Path, field: str, scale: str, limit: int | None) -> tuple[dict, list]:
+def measure_real(model, device, records, root: Path, field: str, scale: str, limit: int | None,
+                 binarize_unet: bool = False) -> tuple[dict, list]:
     stats = new_stats()
     per_line = []
     n_padded = 0
     for rec in records[: limit or len(records)]:
-        gray, padded = load_real_crop(root / rec[field], scale)
+        gray, padded = load_real_crop(root / rec[field], scale, binarize_unet)
         n_padded += int(padded)
         x = torch.from_numpy(gray.astype(np.float32) / 255.0)[None, None].to(device)
         log_probs = model(x)
@@ -206,6 +222,9 @@ def main() -> None:
     p.add_argument("--max-single-image-pixels", type=int, default=5_000_000)
     p.add_argument("--max-batch-size", type=int, default=64)
     p.add_argument("--num-workers", type=int, default=4)
+    p.add_argument("--binarized", action="store_true",
+                   help="Also measure crops binarized by the Sajjan U-Net, which removes the "
+                        "leaf texture and so isolates the letter-shape half of the domain gap.")
     p.add_argument("--skip-synthetic", action="store_true",
                    help="Measure only the real side (synthetic needs data/s1, 12 GB).")
     p.add_argument("--time-steps", type=int, default=0,
@@ -225,7 +244,9 @@ def main() -> None:
     model.load_state_dict(torch.load(args.checkpoint, map_location=device))
     model.eval()
 
-    conditions = [(f, s) for f in ("crop", "crop_bbox") for s in ("as_is", "h64")]
+    conditions = [(f, s, False) for f in ("crop", "crop_bbox") for s in ("as_is", "h64")]
+    if args.binarized:
+        conditions.append(("crop", "as_is", True))
 
     if args.time_steps:
         t0 = time.time()
@@ -243,13 +264,13 @@ def main() -> None:
 
     results = {"checkpoint": str(args.checkpoint), "device": str(device), "real": {}}
     per_line_all = []
-    for field, scale in conditions:
+    for field, scale, binz in conditions:
         t0 = time.time()
-        r, pl = measure_real(model, device, real_records, real_root, field, scale, None)
+        r, pl = measure_real(model, device, real_records, real_root, field, scale, None, binz)
         r["seconds"] = round(time.time() - t0, 1)
-        results["real"][f"{field}:{scale}"] = r
+        results["real"][f"{field}:{scale}" + (":binarized" if binz else "")] = r
         per_line_all.extend(pl)
-        print(f"  real {field:9s} {scale:6s}  mean top-1 {r['mean_top1_confidence']:.4f}  "
+        print(f"  real {field:9s} {scale:6s}{' bin' if binz else '    '}  mean top-1 {r['mean_top1_confidence']:.4f}  "
               f"<0.9 {r['fraction_below_0.9']:.4f}  lines {r['n_lines']}  frames {r['n_frames']:,}")
 
     if not args.skip_synthetic:
@@ -284,7 +305,7 @@ def main() -> None:
         "seed": SEED,
         "checkpoint": str(args.checkpoint),
         "real_manifest": str(args.real_manifest),
-        "real_conditions": [f"{f}:{s}" for f, s in conditions],
+        "real_conditions": [f"{f}:{s}" + (":binarized" if b else "") for f, s, b in conditions],
         "thresholds": list(THRESHOLDS),
         "s1_manifest": str(args.s1_manifest),
         "val_fraction": args.val_fraction,

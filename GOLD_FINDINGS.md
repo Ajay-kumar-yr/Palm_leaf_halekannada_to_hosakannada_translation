@@ -202,3 +202,45 @@ transcriptions should be a clean test set.
 `src/setu/render/glyphs.py` (with `--midpoint` and margin controls) and
 `data/raw_corpus/binarize_lines.py` are kept, so all of this is
 reproducible rather than merely described.
+
+---
+
+## 5. The domain gap is letter shape, not leaf texture
+
+Prompted by a good question: the pipeline runs real photo → Palmira →
+CRNN with **no binarization**, so was the recogniser being fed something
+unlike its training data? Checked: no. S1 is grayscale textured
+(148–256 grey levels, ink fraction 0.11–1.00) and the real crops are
+grayscale too (143 levels, 0.19). The pipeline was consistent.
+
+But the question points at a real decomposition. The gap between
+synthetic and real has two parts — **texture** (rendered leaf background
+vs a real photographed leaf) and **shape** (a font's letterforms vs a
+scribe's). Binarizing with the Sajjan U-Net removes the first and leaves
+the second. Measured on all 712 sample crops with the original S1
+checkpoint, no retraining (`20261008T141042Z_real_vs_synthetic_confidence`):
+
+| input | mean top-1 | frames below 0.9 |
+|---|---|---|
+| synthetic (S1 val) | 0.9613 | 11.5% |
+| real, binarized | 0.6453 | 76.0% |
+| real, grayscale | 0.6265 | 79.8% |
+
+Decomposing the 0.335 total gap:
+
+| component | size | share |
+|---|---|---|
+| leaf texture | 0.019 | **6%** |
+| letter shape | 0.316 | **94%** |
+
+**Binarization is worth having and nowhere near enough.** It is free,
+it reliably improves confidence (and should be used), but it closes
+one-sixteenth of the gap. Ninety-four per cent of the problem is that
+the recogniser learned letterforms from a rendered font and real
+manuscripts are handwritten.
+
+This explains every negative result above in one line, and it is the
+cleanest statement of the project's central obstacle: **not noise, not
+contrast, not preprocessing — shape.** It is also why no amount of
+preprocessing rescues the recogniser, and why the data-scaling curve
+(§5c in `DEMO_PLAN.md`) is the right place to look for the real cost.

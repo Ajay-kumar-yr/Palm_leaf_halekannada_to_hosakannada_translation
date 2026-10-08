@@ -1,0 +1,111 @@
+{
+  "checkpoint": "runs/20261006T120718Z_crnn_train_s1/best_model.pt",
+  "device": "cuda",
+  "real": {
+    "crop:as_is": {
+      "n_lines": 712,
+      "n_frames": 117997,
+      "mean_top1_confidence": 0.6265276047288681,
+      "fraction_below_0.9": 0.7983169083563069,
+      "fraction_below_0.99": 0.9653550545627795,
+      "line_confidence": {
+        "mean": 0.627180911433161,
+        "median": 0.6267526149749756,
+        "min": 0.5697417855262756,
+        "max": 0.7130705118179321
+      },
+      "flagging_rate": {
+        "0.75": 1.0,
+        "0.80": 1.0,
+        "0.85": 1.0,
+        "0.90": 1.0
+      },
+      "n_padded_to_min_height": 12,
+      "seconds": 21.5
+    },
+    "crop:h64": {
+      "n_lines": 712,
+      "n_frames": 121717,
+      "mean_top1_confidence": 0.6253840339725708,
+      "fraction_below_0.9": 0.8080793987742227,
+      "fraction_below_0.99": 0.9671861803601086,
+      "line_confidence": {
+        "mean": 0.6296553734815522,
+        "median": 0.6300002038478851,
+        "min": 0.5776711106300354,
+        "max": 0.6938921809196472
+      },
+      "flagging_rate": {
+        "0.75": 1.0,
+        "0.80": 1.0,
+        "0.85": 1.0,
+        "0.90": 1.0
+      },
+      "n_padded_to_min_height": 0,
+      "seconds": 16.8
+    },
+    "crop_bbox:as_is": {
+      "n_lines": 712,
+      "n_frames": 117997,
+      "mean_top1_confidence": 0.6341274461329013,
+      "fraction_below_0.9": 0.7830114336230275,
+      "fraction_below_0.99": 0.9600074603969637,
+      "line_confidence": {
+        "mean": 0.6349426422561153,
+        "median": 0.6341124773025513,
+        "min": 0.5869851112365723,
+        "max": 0.7170934081077576
+      },
+      "flagging_rate": {
+        "0.75": 1.0,
+        "0.80": 1.0,
+        "0.85": 1.0,
+        "0.90": 1.0
+      },
+      "n_padded_to_min_height": 12,
+      "seconds": 21.1
+    },
+    "crop_bbox:h64": {
+      "n_lines": 712,
+      "n_frames": 121717,
+      "mean_top1_confidence": 0.6351681475388931,
+      "fraction_below_0.9": 0.7853134746566871,
+      "fraction_below_0.99": 0.9609421884057591,
+      "line_confidence": {
+        "mean": 0.6387101261133559,
+        "median": 0.6381199359893799,
+        "min": 0.578333854675293,
+        "max": 0.7106987833976746
+      },
+      "flagging_rate": {
+        "0.75": 1.0,
+        "0.80": 1.0,
+        "0.85": 1.0,
+        "0.90": 1.0
+      },
+      "n_padded_to_min_height": 0,
+      "seconds": 16.3
+    },
+    "crop:as_is:binarized": {
+      "n_lines": 712,
+      "n_frames": 117997,
+      "mean_top1_confidence": 0.6452896705580751,
+      "fraction_below_0.9": 0.7603922147767503,
+      "fraction_below_0.99": 0.957320952288778,
+      "line_confidence": {
+        "mean": 0.6482277243827166,
+        "median": 0.6458270847797394,
+        "min": 0.6020621657371521,
+        "max": 0.7415293455123901
+      },
+      "flagging_rate": {
+        "0.75": 1.0,
+        "0.80": 1.0,
+        "0.85": 1.0,
+        "0.90": 1.0
+      },
+      "n_padded_to_min_height": 12,
+      "seconds": 35.1
+    }
+  }
+}

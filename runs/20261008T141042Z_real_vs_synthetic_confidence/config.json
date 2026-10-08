@@ -1,0 +1,22 @@
+{
+  "seed": 0,
+  "checkpoint": "runs/20261006T120718Z_crnn_train_s1/best_model.pt",
+  "real_manifest": "data/real_lines/sample/manifest.jsonl",
+  "real_conditions": [
+    "crop:as_is",
+    "crop:h64",
+    "crop_bbox:as_is",
+    "crop_bbox:h64",
+    "crop:as_is:binarized"
+  ],
+  "thresholds": [
+    0.75,
+    0.8,
+    0.85,
+    0.9
+  ],
+  "s1_manifest": "data/s1/manifest.jsonl",
+  "val_fraction": 0.05,
+  "skip_synthetic": true,
+  "note": "label-free: no transcriptions of real HKHPL lines exist, so this measures confidence and flagging only, never accuracy on real imagery"
+}

@@ -113,3 +113,55 @@ very bottleneck that made the machine-labelling route necessary.
 - **32 lines.** Enough for a mean CER with a wide interval, not enough to
   break down by page or hand.
 - These are **held-out** lines, so none of this leaked into training.
+
+---
+
+## 4. Glyph extraction from the gold lines: works, but not well enough to stitch
+
+Tested on 2026-10-08, time-boxed, because it was the only idea that
+attacks the data bottleneck without more human transcription: cut each
+character out of the 32 transcribed lines, build a bank of real glyphs
+in the scribe's hand, and stitch unlimited training lines with perfect
+labels.
+
+**The alignment half works.** A recogniser overfit on the gold lines
+(loss 0.026) force-aligns all 32 of them, zero rejections, yielding
+**1,787 glyphs covering 49 of 66 symbols (74%)**, 34 of them with 5+
+exemplars. Overfitting is legitimate here: the model only has to
+reproduce text it has memorised in order to say *where* each character
+sits.
+
+**The glyphs carry real symbol identity, weakly.** Nearest-neighbour on
+raw pixels: **14.5%** same-symbol against 3.5% chance, top-5 35% against
+~15%. Four times chance is well clear of noise — these are genuinely
+characters, not slices of background.
+
+**But they cannot be cut cleanly.** CTC marks where a character *peaks*,
+not where it begins and ends, and three cutting strategies all hit the
+same ceiling:
+
+| cut | median width | 1-NN | top-5 |
+|---|---|---|---|
+| no margin | 8px | 0.105 | 0.273 |
+| 1 frame margin | 24px | **0.145** | 0.351 |
+| 2 frame margin | 40px | 0.145 | 0.355 |
+| midpoint between peaks | 16px | 0.101 | 0.294 |
+
+Too narrow clips the character; too wide drags in its neighbours;
+splitting the gap between peaks does neither well. This is not a
+parameter to tune — in connected handwriting the ink of adjacent
+characters genuinely overlaps horizontally, and no vertical cut
+separates them.
+
+**The stitched lines settle it.** Rebuilding a line from the bank
+produces visible brightness seams at every join, clipped characters, and
+none of the flow of the real line beside it. A recogniser trained on
+that would learn that characters are separated by seams — which real
+lines are not.
+
+**Verdict: a real direction, not a three-day one.** The obvious next
+steps if anyone picks it up are per-glyph background normalisation (the
+seams are largely a brightness mismatch) and blending at the joins. The
+character shapes themselves are sound. `src/setu/render/glyphs.py` is
+kept, with `--midpoint` and the margin controls, so the experiment is
+reproducible rather than merely described.

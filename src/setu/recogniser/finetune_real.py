@@ -179,6 +179,12 @@ def build_loaders(args, device):
     rows = [r for r in rows if not (r.get("image", r["crop"]) in seen
                                     or seen.add(r.get("image", r["crop"])))]
     real_train, real_val = split_real(rows, args.val_fraction)
+    if args.limit_train:
+        # Shuffle before truncating so a subset is not one page's worth of
+        # lines; the held-out set is untouched, so every point on the curve
+        # is measured against the same lines.
+        random.Random(SEED).shuffle(real_train)
+        real_train = real_train[: args.limit_train]
     set_dir = Path(args.labels[0]).parent
     how = "demo hold-out" if any("demo_split" in r for r in rows) else "hash split"
     print(f"real: {len(rows)} labelled lines -> {len(real_train)} train, {len(real_val)} val "
@@ -282,6 +288,9 @@ def main() -> None:
     p.add_argument("--max-batch-size", type=int, default=32)
     p.add_argument("--num-workers", type=int, default=4)
     p.add_argument("--no-replay", action="store_true", help="train on real lines only (expect forgetting)")
+    p.add_argument("--limit-train", type=int, default=None,
+                   help="Train on only the first N real lines (seeded shuffle). For measuring "
+                        "the data-scaling curve: how much labelled data this actually needs.")
     p.add_argument("--digits", action="store_true",
                    help="Use wx.EXTENDED_VOCAB (adds Kannada numerals, 10 extra CTC classes). "
                         "The checkpoint's classifier is widened, keeping every existing class.")
@@ -353,7 +362,7 @@ def main() -> None:
     run_dir = start_run("crnn_finetune_real", {
         "seed": SEED, "labels": [str(p) for p in args.labels], "resume_from": str(args.resume_from),
         "n_real_train": len(real_train), "n_real_val": len(real_val),
-        "epochs": args.epochs, "lr": args.lr, "replay_ratio": None if args.no_replay else args.replay_ratio,
+        "epochs": args.epochs, "lr": args.lr, "limit_train": args.limit_train, "replay_ratio": None if args.no_replay else args.replay_ratio,
         "val_fraction": args.val_fraction, "line_height": LINE_HEIGHT,
         "vocabulary": "EXTENDED (with Kannada digits)" if USE_DIGITS else "base",
         "n_classes": len(wx.tables(USE_DIGITS)[0]) + 1,
@@ -376,8 +385,12 @@ def main() -> None:
         print(f"epoch {epoch:3d}/{args.epochs}  loss {loss:.4f}  real_val_CER {real_cer:.4f}  "
               f"S1_val_CER {s1_cer if s1_cer is None else f'{s1_cer:.4f}'}  "
               f"{history[-1]['seconds']:.0f}s")
-        if real_cer < best:
-            best = real_cer
+        # With no held-out set (an overfit-for-alignment run) real_cer is
+        # nan, and `nan < best` is False, so nothing would ever be saved
+        # and the run would produce no checkpoint at all.
+        improved = real_cer < best if real_val_loader else True
+        if improved:
+            best = real_cer if real_val_loader else loss
             torch.save(model.state_dict(), run_dir / "best_model.pt")
             history[-1]["saved"] = True
     for ref, hyp in samples[:3]:

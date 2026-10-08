@@ -1,0 +1,16 @@
+{
+  "n_lines": 32,
+  "n_lines_aligned": 32,
+  "n_glyphs": 1787,
+  "n_distinct_symbols": 49,
+  "vocabulary_coverage": 0.742,
+  "symbols_with_1": 9,
+  "symbols_with_5_or_more": 34,
+  "glyph_width_px": {
+    "min": 17,
+    "median": 24,
+    "max": 40
+  },
+  "rejections": {},
+  "alignment": "CTC forced alignment (Viterbi) using a recogniser overfit on these same lines -- legitimate for locating characters it has memorised, NOT a measurement of accuracy"
+}

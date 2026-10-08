@@ -1,0 +1,8 @@
+{
+  "seed": 0,
+  "checkpoint": "runs/20261008T133107Z_crnn_finetune_real/best_model.pt",
+  "labels": "data/real_lines/gold/gold_train.jsonl",
+  "margin_frames": 1,
+  "max_span_fraction": 0.25,
+  "out_dir": "data/glyph_bank"
+}

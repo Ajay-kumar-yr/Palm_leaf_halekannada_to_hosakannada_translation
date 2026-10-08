@@ -123,7 +123,13 @@ def main() -> None:
         if not encodable(text):
             counts["rejected_unencodable"] += 1
             continue
-        rows.append({"crop": crop, "page": m["page"], "text": text,
+        rows.append({"crop": crop,
+                     # Repo-root-relative, so label sets from different
+                     # directories (demo pages + extra pages of the same
+                     # hand) can be concatenated into one training set.
+                     "image": str((args.set_dir / crop).resolve().relative_to(REPO_ROOT)
+                                  ).replace("\\", "/"),
+                     "page": m["page"], "text": text,
                      "aspect": m["width"] / m["height"] if m["height"] else 0.0,
                      "width": m["width"], "height": m["height"]})
 

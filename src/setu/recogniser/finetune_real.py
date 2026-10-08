@@ -70,6 +70,7 @@ from setu.render.augment import augment_line  # noqa: E402
 from setu.runlog import finish_run, start_run  # noqa: E402
 
 SEED = 0  # CLAUDE.md rule 6
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 LINE_HEIGHT = 64
 MIN_HEIGHT = 32  # five height-pooling stages: 2^5
 
@@ -97,7 +98,11 @@ class RealLineDataset(Dataset):
 
     def __getitem__(self, idx: int):
         r = self.rows[idx]
-        im = Image.open(self.set_dir / r["crop"]).convert("L")
+        # `image` is repo-root-relative and lets one training set mix
+        # label files from several directories; `crop` is the older,
+        # set_dir-relative form.
+        path = REPO_ROOT / r["image"] if "image" in r else self.set_dir / r["crop"]
+        im = Image.open(path).convert("L")
         w = max(WIDTH_DOWNSAMPLE, round(im.width * LINE_HEIGHT / im.height))
         img = np.array(im.resize((w, LINE_HEIGHT), Image.LANCZOS), dtype=np.uint8)
         if img.shape[0] < MIN_HEIGHT:  # cannot happen at LINE_HEIGHT=64, kept for safety
@@ -146,16 +151,23 @@ def evaluate_real(model, loader, device) -> tuple[float, list[tuple[str, str]]]:
     return total / max(n, 1), samples
 
 
-def load_rows(labels: Path) -> list[dict]:
-    return [json.loads(l) for l in labels.open(encoding="utf-8")]
+def load_rows(labels) -> list[dict]:
+    paths = labels if isinstance(labels, (list, tuple)) else [labels]
+    rows = []
+    for p in paths:
+        rows += [json.loads(l) for l in Path(p).open(encoding="utf-8")]
+    return rows
 
 
 def build_loaders(args, device):
     rows = load_rows(args.labels)
     if not rows:
         raise SystemExit(f"{args.labels} is empty -- run setu.label.build_label_set first")
+    seen = set()
+    rows = [r for r in rows if not (r.get("image", r["crop"]) in seen
+                                    or seen.add(r.get("image", r["crop"])))]
     real_train, real_val = split_real(rows, args.val_fraction)
-    set_dir = args.labels.parent
+    set_dir = Path(args.labels[0]).parent
     how = "demo hold-out" if any("demo_split" in r for r in rows) else "hash split"
     print(f"real: {len(rows)} labelled lines -> {len(real_train)} train, {len(real_val)} val "
           f"({len({r['page'] for r in rows})} pages, {how})")
@@ -205,8 +217,8 @@ def build_replay(args, n_real: int):
 def memorize_check(args, device) -> None:
     """CLAUDE.md rule 3: prove the model can drive 8 real examples to
     near-zero error before committing to a long run."""
-    rows = [json.loads(l) for l in args.labels.open(encoding="utf-8")][:8]
-    ds = RealLineDataset(rows, args.labels.parent, augment=False, seed=SEED)
+    rows = load_rows(args.labels)[:8]
+    ds = RealLineDataset(rows, Path(args.labels[0]).parent, augment=False, seed=SEED)
     loader = DataLoader(ds, batch_size=2, shuffle=False, collate_fn=collate)
     model = CRNN().to(device)
     model.load_state_dict(torch.load(args.resume_from, map_location=device))
@@ -236,7 +248,10 @@ def memorize_check(args, device) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--labels", type=Path, default=Path("data/real_lines/train/train_labels.jsonl"))
+    p.add_argument("--labels", type=Path, nargs="+",
+                   default=[Path("data/real_lines/train/train_labels.jsonl")],
+                   help="One or more label sets; concatenated (each row carries its own "
+                        "repo-root-relative image path).")
     p.add_argument("--resume-from", type=Path,
                    default=Path("runs/20261006T120718Z_crnn_train_s1/best_model.pt"))
     p.add_argument("--s1-manifest", type=Path, default=Path("data/s1/manifest.jsonl"))
@@ -314,7 +329,7 @@ def main() -> None:
 
     rows = load_rows(args.labels)
     run_dir = start_run("crnn_finetune_real", {
-        "seed": SEED, "labels": str(args.labels), "resume_from": str(args.resume_from),
+        "seed": SEED, "labels": [str(p) for p in args.labels], "resume_from": str(args.resume_from),
         "n_real_train": len(real_train), "n_real_val": len(real_val),
         "epochs": args.epochs, "lr": args.lr, "replay_ratio": None if args.no_replay else args.replay_ratio,
         "val_fraction": args.val_fraction, "line_height": LINE_HEIGHT,

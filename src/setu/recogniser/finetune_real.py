@@ -75,17 +75,24 @@ LINE_HEIGHT = 64
 MIN_HEIGHT = 32  # five height-pooling stages: 2^5
 
 
-USE_DIGITS = False  # set from --digits; see setu.data.wx.EXTENDED_VOCAB
+# NOTE: the vocabulary choice must travel on the Dataset instance, never
+# in a module global. DataLoader workers are separate processes that
+# re-import this module, so a global set in main() is back to its default
+# inside the worker -- which silently encoded with the wrong vocabulary
+# until a Kannada numeral made it raise.
+USE_DIGITS = False  # --digits; read ONLY in main/eval, never in a worker
 
 
 class RealLineDataset(Dataset):
     """Labelled real crops, resized to LINE_HEIGHT. Same (image, labels,
     text) contract as S1Dataset so `collate` is reused unchanged."""
 
-    def __init__(self, rows: list[dict], set_dir: Path, augment: bool, seed: int):
+    def __init__(self, rows: list[dict], set_dir: Path, augment: bool, seed: int,
+                 digits: bool = False):
         self.rows = rows
         self.set_dir = set_dir
         self.augment = augment
+        self.digits = digits  # pickled to each worker; see the note above
         self.rng = np.random.default_rng(seed)
 
     def __len__(self) -> int:
@@ -113,8 +120,8 @@ class RealLineDataset(Dataset):
             img = np.pad(img, ((pad // 2, pad - pad // 2), (0, 0)), constant_values=int(np.median(img)))
         if self.augment:
             img = augment_line(img, self.rng)
-        _, sym_to_idx, _ = wx.tables(USE_DIGITS)
-        labels = [sym_to_idx[s] for s in wx.encode(r["text"], digits=USE_DIGITS)]
+        _, sym_to_idx, _ = wx.tables(self.digits)
+        labels = [sym_to_idx[s] for s in wx.encode(r["text"], digits=self.digits)]
         return img, labels, r["text"]
 
 
@@ -177,8 +184,8 @@ def build_loaders(args, device):
     print(f"real: {len(rows)} labelled lines -> {len(real_train)} train, {len(real_val)} val "
           f"({len({r['page'] for r in rows})} pages, {how})")
 
-    train_ds = RealLineDataset(real_train, set_dir, augment=True, seed=SEED)
-    val_ds = RealLineDataset(real_val, set_dir, augment=False, seed=SEED)
+    train_ds = RealLineDataset(real_train, set_dir, augment=True, seed=SEED, digits=args.digits)
+    val_ds = RealLineDataset(real_val, set_dir, augment=False, seed=SEED, digits=args.digits)
     train_loader = DataLoader(
         train_ds,
         batch_sampler=AreaBucketBatchSampler(list(range(len(real_train))), train_ds.dims(),
@@ -223,7 +230,8 @@ def memorize_check(args, device) -> None:
     """CLAUDE.md rule 3: prove the model can drive 8 real examples to
     near-zero error before committing to a long run."""
     rows = load_rows(args.labels)[:8]
-    ds = RealLineDataset(rows, Path(args.labels[0]).parent, augment=False, seed=SEED)
+    ds = RealLineDataset(rows, Path(args.labels[0]).parent, augment=False, seed=SEED,
+                         digits=args.digits)
     loader = DataLoader(ds, batch_size=2, shuffle=False, collate_fn=collate)
     n_classes = len(wx.tables(USE_DIGITS)[0]) + 1
     model = CRNN(num_classes=n_classes).to(device)

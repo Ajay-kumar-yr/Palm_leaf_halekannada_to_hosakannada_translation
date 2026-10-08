@@ -46,6 +46,7 @@ from setu.runlog import finish_run, start_run
 SEED = 0  # CLAUDE.md rule 6
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 USER_AGENT = "setu-demo/0.1 (+palm-leaf research project)"
+REQUEST_TIMEOUT = 150  # seconds; overridden by --timeout
 
 # Faithful transcription, NOT modernization -- the labels train the
 # recogniser, which must read what is on the leaf. ಱ/ೞ are named
@@ -173,16 +174,18 @@ def clean(text: str) -> str:
     return re.sub(r"\s+", " ", _KEEP.sub(" ", text)).strip()
 
 
-def _post(url: str, headers: dict, body: dict, timeout: int = 240) -> dict:
+def _post(url: str, headers: dict, body: dict, timeout: int | None = None) -> dict:
     req = urllib.request.Request(
         url, data=json.dumps(body).encode("utf-8"),
         headers={"Content-Type": "application/json", "User-Agent": USER_AGENT, **headers},
     )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout or REQUEST_TIMEOUT) as r:
         return json.load(r)
 
 
-GEMINI_THINKING: str | None = None  # set from --thinking; None = model default
+GEMINI_THINKING: str | None = None     # --thinking: thinkingLevel
+GEMINI_THINKING_BUDGET: int | None = None  # --thinking-budget: hard token cap
+GEMINI_MAX_OUTPUT: int | None = None       # --max-output-tokens
 
 
 def call_gemini(key: str, model: str, pngs: list[bytes]) -> tuple[str, dict]:
@@ -201,8 +204,19 @@ def call_gemini(key: str, model: str, pngs: list[bytes]) -> tuple[str, dict]:
         "contents": [{"parts": parts}],
         "generationConfig": {"temperature": 0},
     }
+    # thinkingLevel alone does not bound the worst case: one batch spent
+    # 62,915 thought tokens and 197s at level "low" while typical batches
+    # used 1.6-4.3k in 13-22s. thinkingBudget is a hard token cap, which
+    # is what keeps a run's wall-clock predictable.
+    cfg = {}
     if GEMINI_THINKING:
-        body["generationConfig"]["thinkingConfig"] = {"thinkingLevel": GEMINI_THINKING}
+        cfg["thinkingLevel"] = GEMINI_THINKING
+    if GEMINI_THINKING_BUDGET is not None:
+        cfg["thinkingBudget"] = GEMINI_THINKING_BUDGET
+    if cfg:
+        body["generationConfig"]["thinkingConfig"] = cfg
+    if GEMINI_MAX_OUTPUT:
+        body["generationConfig"]["maxOutputTokens"] = GEMINI_MAX_OUTPUT
     d = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
               {"x-goog-api-key": key}, body)
     cands = d.get("candidates") or []
@@ -315,9 +329,22 @@ def main() -> None:
                         "thinking depth or batch size) separate for the agreement check.")
     p.add_argument("--thinking", default=None,
                    help="Gemini thinkingLevel (e.g. low). Output goes to a separate labels file.")
+    p.add_argument("--thinking-budget", type=int, default=None,
+                   help="Gemini thinkingBudget, a hard cap on thought tokens per request. "
+                        "Bounds the worst case; thinkingLevel alone does not.")
+    p.add_argument("--max-output-tokens", type=int, default=None,
+                   help="CAUTION: Gemini counts thought tokens against this, so a low value "
+                        "truncates the answer and leaks raw reasoning. Leave unset.")
+    p.add_argument("--timeout", type=int, default=150,
+                   help="Per-request socket timeout. A thinking spiral (62k thought tokens, "
+                        "197s observed) is cheaper to abandon and retry than to wait out.")
     args = p.parse_args()
-    global GEMINI_THINKING
+    global GEMINI_THINKING, GEMINI_THINKING_BUDGET, GEMINI_MAX_OUTPUT
     GEMINI_THINKING = args.thinking
+    GEMINI_THINKING_BUDGET = args.thinking_budget
+    GEMINI_MAX_OUTPUT = args.max_output_tokens
+    global REQUEST_TIMEOUT
+    REQUEST_TIMEOUT = args.timeout
     random.seed(SEED)
 
     key_name, call = PROVIDERS[args.provider]
@@ -343,7 +370,8 @@ def main() -> None:
         "seed": SEED, "provider": args.provider, "model": args.model,
         "set_dir": str(args.set_dir), "crop_field": args.crop_field, "limit": args.limit,
         "group": args.group,
-        "rpm": args.rpm, "batch_size": args.batch_size, "thinking": args.thinking, "prompt": PROMPT if args.batch_size == 1 else BATCH_PROMPT, "temperature": 0, "output": str(out_path),
+        "rpm": args.rpm, "batch_size": args.batch_size, "thinking": args.thinking,
+        "thinking_budget": args.thinking_budget, "max_output_tokens": args.max_output_tokens, "prompt": PROMPT if args.batch_size == 1 else BATCH_PROMPT, "temperature": 0, "output": str(out_path),
     })
 
     gap = 60.0 / args.rpm

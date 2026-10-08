@@ -1,0 +1,11 @@
+{
+  "seed": 0,
+  "set_dir": "data\\real_lines\\train",
+  "labels": [
+    "labels_*.jsonl"
+  ],
+  "group": "1",
+  "max_disagreement": 0.35,
+  "length_mad": 3.5,
+  "min_chars": 8
+}

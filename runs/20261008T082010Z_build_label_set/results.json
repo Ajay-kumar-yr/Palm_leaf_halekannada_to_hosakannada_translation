@@ -1,0 +1,35 @@
+{
+  "n_kept": 49,
+  "counts": {
+    "candidates": 75,
+    "rejected_group": 0,
+    "rejected_empty": 0,
+    "rejected_short": 0,
+    "rejected_unencodable": 26,
+    "rejected_length": 0,
+    "rejected_disagreement": 0
+  },
+  "length_band_chars_per_aspect": {
+    "median": 3.35,
+    "mad": 0.549,
+    "low": 1.43,
+    "high": 5.27
+  },
+  "primary_labeller": "gemini_gemini-3.5-flash_think-low_batch10",
+  "other_labellers": [
+    "gemini_gemini-3.5-flash",
+    "gemini_gemini-3.5-flash-lite",
+    "gemini_gemini-3.5-flash_think-low",
+    "groq_qwen_qwen3.8-27b"
+  ],
+  "n_cross_checked": 9,
+  "mean_disagreement": 0.183,
+  "pages": [
+    "1.108",
+    "1.12",
+    "1.140"
+  ],
+  "total_chars": 2329,
+  "output": "data\\real_lines\\train\\train_labels.jsonl",
+  "caveat": "machine labels, no human verification; cross-labeller agreement is the only external check and is 0 crops when a single labeller was used"
+}

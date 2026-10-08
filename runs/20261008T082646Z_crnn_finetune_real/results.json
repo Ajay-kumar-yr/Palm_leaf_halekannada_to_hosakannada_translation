@@ -1,0 +1,143 @@
+{
+  "best_real_val_cer": 0.6906843306269627,
+  "final_s1_val_cer": 0.0029,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.2411,
+      "real_val_cer": 0.7283,
+      "s1_val_cer": 0.0029,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 24.3,
+      "saved": true
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.1857,
+      "real_val_cer": 0.7243,
+      "s1_val_cer": 0.0031,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 23.2,
+      "saved": true
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.1674,
+      "real_val_cer": 0.737,
+      "s1_val_cer": 0.0029,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 23.0
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.1292,
+      "real_val_cer": 0.7012,
+      "s1_val_cer": 0.003,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 23.4,
+      "saved": true
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.1219,
+      "real_val_cer": 0.7211,
+      "s1_val_cer": 0.0029,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 23.9
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.1041,
+      "real_val_cer": 0.6907,
+      "s1_val_cer": 0.003,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 22.6,
+      "saved": true
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.1101,
+      "real_val_cer": 0.7278,
+      "s1_val_cer": 0.0026,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 21.9
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.1125,
+      "real_val_cer": 0.7247,
+      "s1_val_cer": 0.0031,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 23.0
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.107,
+      "real_val_cer": 0.7306,
+      "s1_val_cer": 0.0031,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 22.2
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.0791,
+      "real_val_cer": 0.7152,
+      "s1_val_cer": 0.0029,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 22.8
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.0748,
+      "real_val_cer": 0.7147,
+      "s1_val_cer": 0.0027,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 23.5
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.0897,
+      "real_val_cer": 0.7158,
+      "s1_val_cer": 0.0029,
+      "steps": 50,
+      "skipped": 0,
+      "seconds": 23.6
+    }
+  ],
+  "n_real_train": 43,
+  "n_real_val": 6,
+  "samples": [
+    {
+      "ref": "ವಂತ್ರಿತು ॥ ಮೆಮುಖ ನಕ್ಷತ್ರ ಭಾಯೋದರಗ ಮಾಡವಶಾ",
+      "hyp": "ಅಅವಅಅಅಕಅಅನಅರವವ"
+    },
+    {
+      "ref": "॥ ದನಬಿದಸಕೊಂಬುಳು। ಕದತಷಿಡಾದುಬಂದರಪ್ರವತಿ",
+      "hyp": "ವರದರಅರಅಅಅಅಮಅಅಅಅವಗರಅವ"
+    },
+    {
+      "ref": "॥ ಯಜ್ಞಾನಿಷದಿವಳಗಕಳ್ಳುಗೃತನಮತರು ಶ್ರೇನಿಯ",
+      "hyp": "ಅವವಕಅಕಕಲಲವಅಅವಅವ್ವಾ"
+    },
+    {
+      "ref": "॥ ನಹೊರಳಿಯ ಕೆಳಗೆ ತಾಗಿ ಹೊಲದು ॥ ತೇಜತತ್ವು ತ್ರಿಕೊಶಿರಕ್ತವನರಪ್ಪದು",
+      "hyp": "ಅವವಅ ವಅಅವಅಅಅಅಅಅವವ"
+    },
+    {
+      "ref": "॥ ವಾಮದೇವಾ ತೇಜತತ್ವ್ವ ಅಷ್ಟೊರ ವಾಯುತತ್ವ್ವ ತತ್ವ್ವ ರುಪ ಆಕಾಶತತ್ವ್ವ",
+      "hyp": "ಅಅವಅರಅವಅಡರವಅನಅವಅಮವ"
+    }
+  ],
+  "caveat": "real_val_cer is measured against machine labels, not human ground truth"
+}

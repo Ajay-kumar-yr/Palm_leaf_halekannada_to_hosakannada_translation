@@ -1,0 +1,217 @@
+{
+  "best_real_val_cer": 0.7189384340650934,
+  "final_s1_val_cer": 0.0038,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.239,
+      "real_val_cer": 0.7744,
+      "s1_val_cer": 0.0031,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 26.2,
+      "saved": true
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.1634,
+      "real_val_cer": 0.7731,
+      "s1_val_cer": 0.0031,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.8,
+      "saved": true
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.1399,
+      "real_val_cer": 0.7576,
+      "s1_val_cer": 0.003,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.5,
+      "saved": true
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.1149,
+      "real_val_cer": 0.773,
+      "s1_val_cer": 0.0033,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.3
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.1143,
+      "real_val_cer": 0.7517,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.8,
+      "saved": true
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.1071,
+      "real_val_cer": 0.7571,
+      "s1_val_cer": 0.0032,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.6
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.089,
+      "real_val_cer": 0.7709,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.7
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.0804,
+      "real_val_cer": 0.7522,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.6
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.0575,
+      "real_val_cer": 0.7607,
+      "s1_val_cer": 0.0031,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.1
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.0642,
+      "real_val_cer": 0.7337,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.8,
+      "saved": true
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.0911,
+      "real_val_cer": 0.7544,
+      "s1_val_cer": 0.0033,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.6
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.0376,
+      "real_val_cer": 0.7346,
+      "s1_val_cer": 0.0036,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.7
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.0416,
+      "real_val_cer": 0.7361,
+      "s1_val_cer": 0.0033,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.4
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.055,
+      "real_val_cer": 0.7353,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.8
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.0621,
+      "real_val_cer": 0.7526,
+      "s1_val_cer": 0.0036,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.3
+    },
+    {
+      "epoch": 16,
+      "train_loss": 0.0324,
+      "real_val_cer": 0.7348,
+      "s1_val_cer": 0.0037,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.1
+    },
+    {
+      "epoch": 17,
+      "train_loss": 0.0766,
+      "real_val_cer": 0.7441,
+      "s1_val_cer": 0.0035,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.2
+    },
+    {
+      "epoch": 18,
+      "train_loss": 0.0501,
+      "real_val_cer": 0.7189,
+      "s1_val_cer": 0.0036,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.8,
+      "saved": true
+    },
+    {
+      "epoch": 19,
+      "train_loss": 0.0767,
+      "real_val_cer": 0.7329,
+      "s1_val_cer": 0.0033,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.6
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.0531,
+      "real_val_cer": 0.7558,
+      "s1_val_cer": 0.0038,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.5
+    }
+  ],
+  "n_real_train": 52,
+  "n_real_val": 32,
+  "samples": [
+    {
+      "ref": "ಲಕಪ್ಪ ಘೋರಯದು ಬಮಕಪ್ಪ । ಇಂತಿ ೧೩ ದಿನದ ವನಶಕ",
+      "hyp": "ಅನಹಹಲದಅಅಗರಶ್ವವಾ"
+    },
+    {
+      "ref": "॥ ಬೆರಳಿಚಿಪಕಮುರಿದ। ತನಗಂದನಬಿಷ್ಟುಅನಿಗೆ",
+      "hyp": "ಆನವಅವವಲದವಅವವವ್"
+    },
+    {
+      "ref": "॥ ಗಕೇಳಮ । ಕಾಯ್೯ಆಗದು ಶಾನಿ । ರೋಗದಲ್ಲಿ । ತೀರಗಿ",
+      "hyp": "ರವಹವಅಗರಕಲನವವಅವೆ"
+    },
+    {
+      "ref": "ತನು। ಆಡುಗವನು। ಈಮುನಿಯಕಪ್ಪಿನುವಯಜಮನನಕ್ರೈಯುವಿಮ",
+      "hyp": "ಅಕರಅವಅಅಕಕನಅರವವ"
+    },
+    {
+      "ref": "॥ ಲ್ಲಿ । ಕೇಳಿದರ । ಪ್ರಿಣವತಾಮಸವೃ । ರವಿನಲ್ಲಿ ಕೇಳಿ",
+      "hyp": "ಅಅವವಹಅಅಅಅಅಮವ ಕವಕಣವನ"
+    }
+  ],
+  "caveat": "real_val_cer is measured against machine labels, not human ground truth"
+}

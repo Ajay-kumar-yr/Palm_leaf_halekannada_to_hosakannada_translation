@@ -129,6 +129,87 @@ per project, so extra keys in one project add nothing. Two lines in
 overwritten — if a key seems to be missing, check for a duplicated
 name first.
 
+## 5c. The data-scaling measurement — option A is closed (2026-10-08)
+
+Before spending the remaining days labelling, we measured what labelling
+would buy. Same held-out 32 lines, same recipe, only the amount of
+training data changed:
+
+| labelled training lines | held-out CER | S1 CER |
+|---|---|---|
+| 13 | 0.7556 | 0.0030 |
+| 52 | 0.7189 | 0.0038 |
+| 105 | 0.7002 | 0.0031 |
+
+Eight times the data bought **0.055 CER**. Fitting the obvious
+log-linear form gives
+
+    CER = 0.824 - 0.0184 x log2(lines)
+
+i.e. **~0.018 CER per doubling**. Extrapolated, a usable recogniser
+needs absurd amounts of data:
+
+| target CER | lines needed |
+|---|---|
+| 0.50 | ~200,000 |
+| 0.30 | ~380,000,000 |
+
+Against that, the most we could label in three days on every free key is
+~450 lines, predicting **CER 0.66**; even 5,000 lines predicts 0.60.
+The S1 column shows nothing is broken — synthetic ability is intact
+throughout.
+
+**So option A fails for a reason money cannot fix.** It is not key
+quota, not API budget, not the four days. A CRNN pre-trained on
+*rendered fonts* is simply the wrong starting point for handwriting, and
+closing that gap needs orders of magnitude more labelled handwriting
+than this project can obtain. Paid API credit would have bought ~2,000
+lines and changed the number by ~0.03.
+
+Extrapolating a three-point curve is not proof that no breakthrough
+exists further along — but it is strong evidence of no *imminent* one,
+and it is the honest basis for the decision. The curve itself belongs in
+the report: it converts "our recogniser cannot read real manuscripts"
+from an apology into a quantified finding about transfer from rendered
+text to handwriting.
+
+**Decision: stop labelling for recogniser training.** The remaining
+routes are:
+
+1. **Human transcriptions of the 32 held-out lines** (the transcription
+   page) — not training data, but they turn every real-image CER from
+   *agreement with a vision model* into a true error rate, and they
+   measure how good the machine labels were.
+2. **Build B — uncertainty by resampling** (§7a below): the only route
+   to real-corpus output that still demonstrates the project's claim.
+3. **Keep the synthetic bridge demo** as the rigorous half: true ground
+   truth, frozen test split, genuine recoveries.
+
+## 7a. Build B — carrying uncertainty on real crops
+
+Our soft bridge needs per-frame CTC distributions from our own
+recogniser, which on real crops produces nothing readable. So on real
+manuscripts the *same principle* is demonstrated with a different
+uncertainty source, and the report says exactly that.
+
+Read each real crop **N times at non-zero temperature** with the vision
+model. Where the readings agree, it is confident; where they disagree,
+the disagreement *is* the uncertainty, with sample frequencies as
+probabilities. Then:
+
+- **B3** takes the majority reading — one string, uncertainty discarded.
+- **B4** takes the reading plus the alternatives and their frequencies.
+
+Same modernizer, same prompt, same temperature; only the input differs —
+exactly the B3/B4 contrast the project is about. ~5 reads + 2
+modernizations per line, so ~70 calls for 10 demo lines.
+
+**What must be disclosed:** this is an *ensemble* uncertainty estimate
+from a vision LLM, not the CTC soft bridge. The mechanism differs. The
+claim — that collapsing to one string early destroys information the
+modernizer could have used — is the same one, and the frame-level
+measurement on synthetic data (80.6%) remains the quantified result.
+
 ## 6. Day by day
 
 ### Day 1 (Oct 9) — labels + go/no-go

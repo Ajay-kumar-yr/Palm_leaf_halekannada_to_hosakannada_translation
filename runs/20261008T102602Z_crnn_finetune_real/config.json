@@ -1,0 +1,22 @@
+{
+  "seed": 0,
+  "labels": [
+    "data/real_lines/train/train_labels.jsonl",
+    "data/real_lines/demo/demo_labels.jsonl"
+  ],
+  "resume_from": "runs/20261006T120718Z_crnn_train_s1/best_model.pt",
+  "n_real_train": 13,
+  "n_real_val": 32,
+  "epochs": 20,
+  "lr": 0.0002,
+  "limit_train": 13,
+  "replay_ratio": 2.0,
+  "val_fraction": 0.15,
+  "line_height": 64,
+  "vocabulary": "EXTENDED (with Kannada digits)",
+  "n_classes": 67,
+  "split": "demo hold-out (demo_split field)",
+  "max_pixels_per_batch": 2200000,
+  "device": "cuda",
+  "label_provenance": "vision-LLM transcriptions filtered by setu.label.build_label_set -- NO human verification; real CER below is against machine labels"
+}

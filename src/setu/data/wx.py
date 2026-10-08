@@ -114,12 +114,59 @@ SYMBOL_TO_INDEX = {sym: i + 1 for i, sym in enumerate(VOCAB)}  # 0 reserved for 
 INDEX_TO_SYMBOL = {i: sym for sym, i in SYMBOL_TO_INDEX.items()}
 INDEX_TO_SYMBOL[0] = BLANK
 
+# --- Kannada digits: an OPT-IN extension, not part of VOCAB ---------------
+#
+# Real palm-leaf pages carry numerals -- verse numbers, dates, counts. They
+# are only 1.9% of characters but appear in 36% of lines (57% on some
+# pages, 100% on one), so a recogniser that cannot emit them cannot be
+# trained on those lines at all.
+#
+# They are kept OUT of VOCAB deliberately. VOCAB's 56 symbols (+ blank =
+# 57 CTC classes) are what the reported synthetic results were measured
+# with -- the 1.53% frozen-test CER, the cached S2 distributions, the
+# trained modernizer's input embeddings. Growing VOCAB would invalidate
+# every one of those checkpoints. The real-handwriting fine-tune is a
+# separate model for a separate purpose, so it (and only it) opts in via
+# EXTENDED_VOCAB. Approved by the user 2026-10-08 (CLAUDE.md: "ask before
+# ... changing the vocabulary").
+#
+# Symbols are prefixed "#" so they cannot collide with any WX symbol, and
+# the digits are appended AFTER the base vocabulary so every existing
+# class index keeps its meaning: a 57-class checkpoint loads into a
+# 67-class model by copying the first 57 output rows (see
+# setu.recogniser.model.expand_classifier).
+DIGITS: dict[str, str] = {chr(0x0CE6 + i): f"#{i}" for i in range(10)}  # ೦..೯
+_SYMBOL_TO_DIGIT = {sym: cp for cp, sym in DIGITS.items()}
+DIGIT_SYMBOLS: list[str] = [DIGITS[chr(0x0CE6 + i)] for i in range(10)]
 
-def encode(text: str) -> list[str]:
+EXTENDED_VOCAB: list[str] = VOCAB + DIGIT_SYMBOLS
+EXTENDED_SYMBOL_TO_INDEX = {sym: i + 1 for i, sym in enumerate(EXTENDED_VOCAB)}
+EXTENDED_INDEX_TO_SYMBOL = {i: sym for sym, i in EXTENDED_SYMBOL_TO_INDEX.items()}
+EXTENDED_INDEX_TO_SYMBOL[0] = BLANK
+
+assert all(EXTENDED_SYMBOL_TO_INDEX[s] == SYMBOL_TO_INDEX[s] for s in VOCAB), (
+    "extending the vocabulary must not renumber existing symbols -- a checkpoint "
+    "trained on VOCAB would silently mean something different"
+)
+
+
+def tables(digits: bool) -> tuple[list[str], dict[str, int], dict[int, str]]:
+    """(vocab, symbol->index, index->symbol) for the chosen vocabulary."""
+    if digits:
+        return EXTENDED_VOCAB, EXTENDED_SYMBOL_TO_INDEX, EXTENDED_INDEX_TO_SYMBOL
+    return VOCAB, SYMBOL_TO_INDEX, INDEX_TO_SYMBOL
+
+
+def encode(text: str, digits: bool = False) -> list[str]:
     """Convert Kannada-script text to a list of WX symbols.
 
     Raises ValueError on any character without a mapping, rather than
     dropping or mis-encoding it silently.
+
+    `digits=True` also accepts Kannada numerals (೦-೯), which are an
+    opt-in extension used only by the real-handwriting fine-tune -- see
+    EXTENDED_VOCAB. With the default False they raise, exactly as before,
+    so every existing caller keeps the vocabulary its checkpoint expects.
     """
     symbols: list[str] = []
     i = 0
@@ -138,6 +185,11 @@ def encode(text: str) -> list[str]:
                 i += 2
                 continue
             symbols.append(_VOWEL_SYMBOLS["a"])  # inherent vowel
+            i += 1
+            continue
+
+        if digits and ch in DIGITS:
+            symbols.append(DIGITS[ch])
             i += 1
             continue
 
@@ -170,7 +222,10 @@ def encode(text: str) -> list[str]:
 
 
 def decode(symbols: list[str]) -> str:
-    """Convert a list of WX symbols back to exact Kannada-script text."""
+    """Convert a list of WX symbols back to exact Kannada-script text.
+
+    Digit symbols (#0-#9) are always accepted: a model that can emit them
+    must be able to have its output read back."""
     out: list[str] = []
     i = 0
     n = len(symbols)
@@ -203,6 +258,11 @@ def decode(symbols: list[str]) -> str:
 
         if sym in _SYMBOL_TO_PUNCT_CODEPOINT:
             out.append(_SYMBOL_TO_PUNCT_CODEPOINT[sym])
+            i += 1
+            continue
+
+        if sym in _SYMBOL_TO_DIGIT:
+            out.append(_SYMBOL_TO_DIGIT[sym])
             i += 1
             continue
 

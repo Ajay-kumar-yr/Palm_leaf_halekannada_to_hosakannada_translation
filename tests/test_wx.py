@@ -78,8 +78,33 @@ def test_encode_rejects_unmapped_character() -> None:
     print("OK  encode() fails loudly on unmapped characters")
 
 
+def test_digit_extension_is_opt_in_and_additive() -> None:
+    """Kannada numerals are an opt-in extension (approved 2026-10-08).
+    The base vocabulary must be untouched, or every checkpoint and cached
+    distribution measured against it silently means something else."""
+    text = "ಜೀವ ೧೧ ಆದ ೨೪"
+    try:
+        wx.encode(text)
+        raise AssertionError("digits must still raise by default")
+    except ValueError:
+        pass
+
+    symbols = wx.encode(text, digits=True)
+    assert wx.decode(symbols) == text, wx.decode(symbols)
+
+    assert len(wx.EXTENDED_VOCAB) == len(wx.VOCAB) + 10
+    assert wx.EXTENDED_VOCAB[: len(wx.VOCAB)] == wx.VOCAB, "digits must be APPENDED"
+    for sym in wx.VOCAB:
+        assert wx.EXTENDED_SYMBOL_TO_INDEX[sym] == wx.SYMBOL_TO_INDEX[sym], (
+            f"{sym!r} changed index -- a VOCAB-trained checkpoint would be misread"
+        )
+    assert not (set(wx.DIGIT_SYMBOLS) & set(wx.VOCAB)), "digit symbols must not collide"
+    print(f"OK  digit extension opt-in and additive ({len(wx.VOCAB)} -> {len(wx.EXTENDED_VOCAB)})")
+
+
 def main() -> None:
     test_vocab_size_in_target_range()
+    test_digit_extension_is_opt_in_and_additive()
     test_every_codepoint_round_trips()
     test_archaic_letters()
     test_consonant_clusters_and_virama()

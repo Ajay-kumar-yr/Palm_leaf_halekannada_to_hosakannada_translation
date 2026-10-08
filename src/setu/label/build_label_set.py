@@ -49,9 +49,9 @@ SEED = 0  # CLAUDE.md rule 6
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 
-def encodable(text: str) -> bool:
+def encodable(text: str, digits: bool) -> bool:
     try:
-        wx.encode(text)
+        wx.encode(text, digits=digits)
         return True
     except ValueError:
         return False
@@ -81,6 +81,9 @@ def main() -> None:
                    help="Max symmetric CER between two labellers for a crop to be kept.")
     p.add_argument("--length-mad", type=float, default=3.5,
                    help="Reject crops this many MADs from the median chars-per-aspect-unit.")
+    p.add_argument("--digits", action="store_true",
+                   help="Keep lines containing Kannada numerals, using wx.EXTENDED_VOCAB. "
+                        "Without this they are rejected as unencodable -- 36%% of real lines.")
     p.add_argument("--min-chars", type=int, default=8)
     p.add_argument("--out-name", default="train_labels.jsonl")
     p.add_argument("--holdout-every", type=int, default=0,
@@ -120,7 +123,7 @@ def main() -> None:
         if len(text) < args.min_chars:
             counts["rejected_short"] += 1
             continue
-        if not encodable(text):
+        if not encodable(text, args.digits):
             counts["rejected_unencodable"] += 1
             continue
         rows.append({"crop": crop,
@@ -216,6 +219,7 @@ def main() -> None:
         "seed": SEED, "set_dir": str(args.set_dir), "labels": args.labels, "group": args.group,
         "max_disagreement": args.max_disagreement, "length_mad": args.length_mad,
         "min_chars": args.min_chars, "holdout_every": args.holdout_every,
+        "digits": args.digits,
     })
     finish_run(run_dir, results)
 

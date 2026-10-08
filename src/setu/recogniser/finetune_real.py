@@ -57,7 +57,7 @@ from torch.utils.data import DataLoader, Dataset  # noqa: E402
 
 from setu.data import wx  # noqa: E402
 from setu.eval.metrics import cer  # noqa: E402
-from setu.recogniser.model import CRNN, WIDTH_DOWNSAMPLE, greedy_decode  # noqa: E402
+from setu.recogniser.model import CRNN, WIDTH_DOWNSAMPLE, expand_classifier, greedy_decode  # noqa: E402
 from setu.recogniser.train import (  # noqa: E402
     AreaBucketBatchSampler,
     S1Dataset,
@@ -73,6 +73,9 @@ SEED = 0  # CLAUDE.md rule 6
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 LINE_HEIGHT = 64
 MIN_HEIGHT = 32  # five height-pooling stages: 2^5
+
+
+USE_DIGITS = False  # set from --digits; see setu.data.wx.EXTENDED_VOCAB
 
 
 class RealLineDataset(Dataset):
@@ -110,7 +113,8 @@ class RealLineDataset(Dataset):
             img = np.pad(img, ((pad // 2, pad - pad // 2), (0, 0)), constant_values=int(np.median(img)))
         if self.augment:
             img = augment_line(img, self.rng)
-        labels = [wx.SYMBOL_TO_INDEX[s] for s in wx.encode(r["text"])]
+        _, sym_to_idx, _ = wx.tables(USE_DIGITS)
+        labels = [sym_to_idx[s] for s in wx.encode(r["text"], digits=USE_DIGITS)]
         return img, labels, r["text"]
 
 
@@ -142,11 +146,12 @@ def evaluate_real(model, loader, device) -> tuple[float, list[tuple[str, str]]]:
     with torch.no_grad():
         for images, _t, input_lengths, _tl, label_seqs, texts in loader:
             log_probs = model(images.to(device))
+            _, _, idx_to_sym = wx.tables(USE_DIGITS)
             for ref, hyp_ids, text in zip(label_seqs, greedy_decode(log_probs.cpu(), input_lengths), texts):
                 total += cer(ref, hyp_ids)
                 n += 1
                 if len(samples) < 5:
-                    samples.append((text, wx.decode([wx.INDEX_TO_SYMBOL[i] for i in hyp_ids])))
+                    samples.append((text, wx.decode([idx_to_sym[i] for i in hyp_ids])))
     model.train()
     return total / max(n, 1), samples
 
@@ -220,8 +225,10 @@ def memorize_check(args, device) -> None:
     rows = load_rows(args.labels)[:8]
     ds = RealLineDataset(rows, Path(args.labels[0]).parent, augment=False, seed=SEED)
     loader = DataLoader(ds, batch_size=2, shuffle=False, collate_fn=collate)
-    model = CRNN().to(device)
-    model.load_state_dict(torch.load(args.resume_from, map_location=device))
+    n_classes = len(wx.tables(USE_DIGITS)[0]) + 1
+    model = CRNN(num_classes=n_classes).to(device)
+    model.load_state_dict(expand_classifier(
+        torch.load(args.resume_from, map_location=device), n_classes))
     model.train()
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     ctc = nn.CTCLoss(blank=0, zero_infinity=True)
@@ -267,12 +274,17 @@ def main() -> None:
     p.add_argument("--max-batch-size", type=int, default=32)
     p.add_argument("--num-workers", type=int, default=4)
     p.add_argument("--no-replay", action="store_true", help="train on real lines only (expect forgetting)")
+    p.add_argument("--digits", action="store_true",
+                   help="Use wx.EXTENDED_VOCAB (adds Kannada numerals, 10 extra CTC classes). "
+                        "The checkpoint's classifier is widened, keeping every existing class.")
     p.add_argument("--memorize-check", action="store_true")
     p.add_argument("--memorize-steps", type=int, default=100)
     p.add_argument("--time-steps", type=int, default=0,
                    help="Measure N steps, project the run, write NOTHING, exit.")
     args = p.parse_args()
 
+    global USE_DIGITS
+    USE_DIGITS = args.digits
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)
@@ -286,8 +298,10 @@ def main() -> None:
     real_train, real_val, real_loader, real_val_loader = build_loaders(args, device)
     replay_loader, s1_val_loader = (None, None) if args.no_replay else build_replay(args, len(real_train))
 
-    model = CRNN().to(device)
-    model.load_state_dict(torch.load(args.resume_from, map_location=device))
+    n_classes = len(wx.tables(USE_DIGITS)[0]) + 1
+    model = CRNN(num_classes=n_classes).to(device)
+    model.load_state_dict(expand_classifier(
+        torch.load(args.resume_from, map_location=device), n_classes))
     model.train()
     ctc = nn.CTCLoss(blank=0, zero_infinity=True)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
@@ -333,6 +347,8 @@ def main() -> None:
         "n_real_train": len(real_train), "n_real_val": len(real_val),
         "epochs": args.epochs, "lr": args.lr, "replay_ratio": None if args.no_replay else args.replay_ratio,
         "val_fraction": args.val_fraction, "line_height": LINE_HEIGHT,
+        "vocabulary": "EXTENDED (with Kannada digits)" if USE_DIGITS else "base",
+        "n_classes": len(wx.tables(USE_DIGITS)[0]) + 1,
         "split": "demo hold-out (demo_split field)" if any("demo_split" in r for r in rows)
                  else "hash of crop id",
         "max_pixels_per_batch": args.max_pixels_per_batch, "device": str(device),

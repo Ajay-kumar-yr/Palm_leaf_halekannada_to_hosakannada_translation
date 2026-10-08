@@ -122,7 +122,10 @@ def main() -> None:
 
     out, n_llm_calls, cers = [], 0, []
     for i, r in enumerate(rows):
-        gray = load_crop(set_dir / r["crop"])
+        # `image` is already repo-root-relative (build_label_set writes it)
+        # and lets one demo mix label sets from several directories.
+        img_rel = r.get("image") or f"{set_dir.as_posix()}/{r['crop']}"
+        gray = load_crop(REPO_ROOT / img_rel)
         x = torch.from_numpy(gray.astype(np.float32) / 255.0)[None, None].to(device)
         with torch.no_grad():
             log_probs = model(x)
@@ -144,7 +147,7 @@ def main() -> None:
 
         entry = {
             "crop": r["crop"], "page": r["page"],
-            "image": str((set_dir / r["crop"]).relative_to(REPO_ROOT)).replace("\\", "/"),
+            "image": img_rel,
             "trained": r.get("demo_split") != "holdout",
             "label_text": r.get("text"), "cer_vs_label": line_cer,
             "b3_text": b3_text, "b4_block": b4_block,

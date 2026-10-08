@@ -85,6 +85,36 @@ class CRNN(nn.Module):
         return input_width // WIDTH_DOWNSAMPLE
 
 
+def expand_classifier(state_dict: dict, num_classes: int) -> dict:
+    """Load a checkpoint trained on a smaller vocabulary into a model with
+    more output classes (setu.data.wx.EXTENDED_VOCAB adds Kannada digits).
+
+    Only the final Linear grows. Its existing rows are copied across
+    unchanged -- the extension appends symbols, so every old class index
+    still means what it meant -- and the new rows start from the same
+    initialisation a fresh Linear would use. Everything the conv stack
+    and the LSTM learned is kept intact.
+
+    Returns the state dict unchanged when the sizes already match, so
+    callers can apply it unconditionally.
+    """
+    w, b = state_dict.get("classifier.weight"), state_dict.get("classifier.bias")
+    if w is None or w.shape[0] == num_classes:
+        return state_dict
+    if w.shape[0] > num_classes:
+        raise ValueError(
+            f"checkpoint has {w.shape[0]} output classes, more than the {num_classes} "
+            f"asked for -- refusing to drop classes"
+        )
+    ref = nn.Linear(w.shape[1], num_classes)
+    new_w, new_b = ref.weight.data.clone(), ref.bias.data.clone()
+    new_w[: w.shape[0]] = w
+    new_b[: b.shape[0]] = b
+    out = dict(state_dict)
+    out["classifier.weight"], out["classifier.bias"] = new_w, new_b
+    return out
+
+
 def greedy_decode(
     log_probs: torch.Tensor, input_lengths: torch.Tensor | None = None
 ) -> list[list[int]]:

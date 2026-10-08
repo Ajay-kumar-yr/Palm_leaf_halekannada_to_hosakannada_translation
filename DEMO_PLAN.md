@@ -4,7 +4,11 @@
 disagree. Like `STATUS.md` it is session state, not a rules document;
 `CLAUDE.md`'s rules still apply to everything below.
 
-**Deadline: 2026-10-12. Feature freeze: end of Day 3 (2026-10-11).**
+**Deadline: 2026-10-12. Feature freeze: end of 2026-10-11.**
+
+**Start at §6a** — the current plan. §1-5c are the record of how the
+approach got here, and §6 (Day 1-4) is superseded. Every number lives
+in `RESULTS.md`; how to run the demo is in `DEMO_RUNBOOK.md`.
 
 ---
 
@@ -211,6 +215,89 @@ modernizer could have used — is the same one, and the frame-level
 measurement on synthetic data (80.6%) remains the quantified result.
 
 ## 6. Day by day
+
+> **The Day 1-4 schedule below is superseded.** It was written before
+> the measurements of 2026-10-08 closed option A, before build B ran,
+> and before the web UI existed. Kept for the record; §6a is the plan.
+
+## 6a. Plan from 2026-10-09 (written 2026-10-08 evening)
+
+### What is already done
+
+| | |
+|---|---|
+| Synthetic bridge demo | published, true ground truth, 6 worked recoveries |
+| Build B on real crops | 34.2% recovery, 5 of 6 lines diverge |
+| Web UI, both pipelines | built, tested end to end, `DEMO_RUNBOOK.md` |
+| All numbers | `RESULTS.md`, each with its run folder |
+| 32 hand transcriptions + ಶ/ಕ correction | machine labels measured at 0.370 |
+
+### The constraint that shapes the day
+
+Free tier is **20 calls per key per day, per model** → 100/day on
+`gemini-3.5-flash`. Budget:
+
+| task | reads (3.5-flash) | modernizer (second model) |
+|---|---|---|
+| pre-cache 2 real pages x 4 lines x 5 reads | 40 | 16 |
+| re-measure recovery at better quality | *reuses those same calls* | — |
+| synthetic demo lines (CRNN is local) | 0 | ~6 |
+| **total** | **40 of 100** | ~22 |
+
+**Do not run build B separately.** Pre-cache the demo pages through the
+UI, then compute the recovery number from those cached samples: one set
+of calls, both the demo cache and the measurement.
+
+### Morning — while quota is fresh
+
+1. Check quota; confirm `3.5-flash` has reset (~9 h after exhaustion).
+2. **Pre-cache the demo set** through the UI at 3.5-flash quality — two
+   real pages plus the synthetic recovery lines. This *is* the demo
+   preparation; afterwards it runs offline.
+3. **Recompute recovery** from those samples. Today's 34.2% was
+   flash-lite reading at 0.428 CER; at 0.370 it should be cleaner. If
+   it stays near 34%, the correlated-error explanation is confirmed,
+   which is itself a result worth reporting.
+4. Switch the demo to `--no-live` once cached, so it *cannot* call out.
+
+### Midday — the 15 extra transcriptions
+
+Transcribe them as a **clean test set**, independent of the 32 (which
+are now entangled with the glyph experiment). Two things only they can
+buy: an honest real-line CER, and whether binarized input helps the
+*fine-tuned* model, which is still untested.
+
+### Afternoon — the decision
+
+**Does Act 2 earn its place?** Judge on the morning's numbers. If the
+readings are visibly a third wrong, it is probably stronger to lead
+with the findings — the 94% shape decomposition, the scaling curve, the
+ಱ discovery — and keep the real route as "here is the pipeline, and
+here is exactly how it fails and why".
+
+Then report sections, with `RESULTS.md` as the spine.
+
+### Friday and Saturday
+
+Rehearse twice. Keep real buffer.
+
+### Cut first if time runs short
+
+- The 3.5-flash re-run — the flash-lite cache from 2026-10-08 already
+  demonstrates the pipeline.
+- Anything further on glyph synthesis (`GOLD_FINDINGS.md` §4a).
+- The B3-vs-B4 re-fine-tune of the old trained modernizer; it has been
+  below the copy floor at every point measured.
+
+### Standing rules for the demo
+
+- Never call an API live in front of an examiner — pre-cache, then
+  `--no-live`.
+- Start the Palmira worker first and check `worker_ready`.
+- Do not describe the real route as "our system reads manuscripts".
+  It does not: 0.687 CER, and `RESULTS.md` §3 says why.
+
+
 
 ### Day 1 (Oct 9) — labels + go/no-go
 - Cut ~600 training crops from pages **outside** the 14 demo pages and

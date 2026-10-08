@@ -53,6 +53,46 @@ def cer(ref: Sequence[T], hyp: Sequence[T]) -> float:
     return edit_distance(ref, hyp) / len(ref)
 
 
+def align(ref: Sequence[T], hyp: Sequence[T]) -> list[tuple[int | None, int | None]]:
+    """Levenshtein alignment: (ref_index, hyp_index) pairs in order, with
+    None for an insertion or a deletion.
+
+    Comparing two sequences position-by-position is only valid when
+    nothing was inserted or deleted. One insertion shifts everything
+    after it, so a line with an edit distance of 3 can show ~100
+    positional mismatches -- which silently turns any per-character
+    analysis built on it into noise.
+    """
+    n, m = len(ref), len(hyp)
+    d = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        d[i][0] = i
+    for j in range(1, m + 1):
+        d[0][j] = j
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            cost = 0 if ref[i - 1] == hyp[j - 1] else 1
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+
+    pairs: list[tuple[int | None, int | None]] = []
+    i, j = n, m
+    while i > 0 or j > 0:
+        if i > 0 and j > 0:
+            cost = 0 if ref[i - 1] == hyp[j - 1] else 1
+            if d[i][j] == d[i - 1][j - 1] + cost:
+                pairs.append((i - 1, j - 1))
+                i, j = i - 1, j - 1
+                continue
+        if i > 0 and d[i][j] == d[i - 1][j] + 1:
+            pairs.append((i - 1, None))  # deletion: ref symbol unmatched
+            i -= 1
+            continue
+        pairs.append((None, j - 1))  # insertion: hyp symbol unmatched
+        j -= 1
+    pairs.reverse()
+    return pairs
+
+
 def agreement_cer(a: Sequence[T], b: Sequence[T]) -> float:
     """Disagreement between two transcriptions when NEITHER is the
     reference (DEMO_PLAN.md: two independent machine labellers):

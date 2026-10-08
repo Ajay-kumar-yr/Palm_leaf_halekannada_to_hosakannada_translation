@@ -14,8 +14,11 @@ from __future__ import annotations
 import argparse
 import base64
 import html
+import io
 import json
 from pathlib import Path
+
+from PIL import Image
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -110,15 +113,24 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--leaf-e
 """
 
 
-def data_uri(path: Path) -> str:
-    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
+def data_uri(path: Path, max_width: int) -> str:
+    """Inline the crop, downscaled to display width. S2 renders run to
+    ~4,700px; at full size six lines made a 3.7MB page for no visible
+    gain."""
+    im = Image.open(path)
+    if max_width and im.width > max_width:
+        im = im.convert("L" if im.mode in ("L", "1") else "RGB")
+        im = im.resize((max_width, max(1, round(im.height * max_width / im.width))), Image.LANCZOS)
+    buf = io.BytesIO()
+    im.convert("RGB").save(buf, "JPEG", quality=82, optimize=True)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 def esc(s) -> str:
     return html.escape(str(s if s is not None else ""))
 
 
-def render_line(e: dict, show_truth: bool) -> str:
+def render_line(e: dict, show_truth: bool, max_width: int) -> str:
     img = REPO_ROOT / e["image"]
     tags = [f'<span class="tag {"seen" if e["trained"] else "held"}">'
             f'{"seen in training" if e["trained"] else "held out"}</span>']
@@ -152,7 +164,7 @@ def render_line(e: dict, show_truth: bool) -> str:
 <article class="line">
   <header><h2>{esc(e["crop"])}</h2>{"".join(tags)}
     <span class="tag seen">{u["n_uncertain"]}/{u["n_chars"]} chars uncertain</span></header>
-  <div class="strip"><img src="{data_uri(img)}" alt="manuscript line {esc(e['crop'])}"></div>
+  <div class="strip"><img src="{data_uri(img, max_width)}" alt="manuscript line {esc(e['crop'])}"></div>
   <div class="cols">
     <div class="col">
       <h3>B3 &middot; argmax</h3>
@@ -178,6 +190,7 @@ def main() -> None:
     p.add_argument("--max-lines", type=int, default=None)
     p.add_argument("--held-out-only", action="store_true")
     p.add_argument("--hide-truth", action="store_true", help="omit the machine labels")
+    p.add_argument("--max-image-width", type=int, default=1400)
     p.add_argument("--title", default="Palm Leaf Line Readings")
     args = p.parse_args()
 
@@ -191,14 +204,59 @@ def main() -> None:
     if not entries:
         raise SystemExit("no entries to render")
 
+    # The framing follows the run's own source. A synthetic run must not
+    # be described as real photographs, and a real run must not borrow
+    # the synthetic run's true-ground-truth claim.
+    synthetic = results.get("cer_is_true_ground_truth", False)
     n_differ = results.get("n_branches_differ")
     cer = results.get("mean_cer_vs_machine_label")
+
+    if synthetic:
+        lede = ("Rendered old-Kannada lines from the frozen test split &mdash; held out from "
+                "training, with true ground truth from the corpus. Each line is shown twice: "
+                "once as <strong>argmax</strong> commits to it, and once as the "
+                "<strong>soft bridge</strong> passes it on, still carrying the readings the "
+                "recogniser was weighing.")
+        note = (
+            "<strong>Why these lines, and what they are.</strong> These are <em>synthetic</em> "
+            "renders, not photographs. On real palm-leaf crops this recogniser cannot read at "
+            "all &mdash; 0.71 CER even when adapted on the same pages &mdash; and that gap is "
+            "the project's §6.4 result, measured separately. On this frozen test split it reads "
+            f"at 1.53% CER, which is where the bridge can be shown rather than asserted. Each "
+            f"line below was chosen because argmax got exactly one character <em>wrong</em> "
+            f"while the bridge still held the right one; {results.get('n_candidate_recovery_lines', '?')} "
+            "test lines qualify. CER here is against <strong>true ground truth</strong>. The "
+            "quantified claim is the frame-level one: where the top-1 was wrong, the correct "
+            "symbol was still in the top-5 <strong>80.6%</strong> of the time."
+        )
+        cer_label = "CER vs true ground truth"
+    else:
+        lede = ("Real Hampi palm-leaf lines, segmented with Palmira and read by the project's "
+                "CRNN. Each line is shown twice: once as <strong>argmax</strong> commits to it, "
+                "and once as the <strong>soft bridge</strong> passes it on, carrying the "
+                "readings the recogniser was still weighing.")
+        note = (
+            "<strong>What this does and does not show.</strong> The recogniser was adapted on "
+            "other lines of these same pages, so this demonstrates adaptation to a known hand, "
+            "not generalisation to unseen manuscripts &mdash; on held-out <em>pages</em> it "
+            "reads at 0.71 CER. Lines marked &ldquo;held out&rdquo; were kept out of training. "
+            "Accuracy is measured against <strong>machine labels from a vision model, not human "
+            "ground truth</strong>. The quantified bridge claim is the frame-level one: where "
+            "the top-1 was wrong, the correct symbol was still in the top-5 "
+            "<strong>80.6%</strong> of the time."
+        )
+        cer_label = "CER vs machine label"
+
     stats = [
         (f'{len(entries)}', "lines shown"),
-        (f'{sum(1 for e in entries if not e["trained"])}', "held out from training"),
-        (f'{results["mean_fraction_uncertain"]:.0%}', "characters flagged uncertain"),
-        (f'{cer:.0%}' if cer is not None else "n/a", "CER vs machine label"),
+        (f'{cer:.1%}' if cer is not None else "n/a", cer_label),
+        (f'{results["mean_fraction_uncertain"]:.1%}', "characters flagged uncertain"),
     ]
+    if results.get("total_recoverable") is not None:
+        stats.append((f'{results["total_recoverable"]}/{results["total_argmax_substitutions"]}',
+                      "wrong characters the bridge still held"))
+    else:
+        stats.append((f'{sum(1 for e in entries if not e["trained"])}', "held out from training"))
     if n_differ is not None:
         stats.append((f"{n_differ}", "lines where branches differ"))
 
@@ -207,25 +265,13 @@ def main() -> None:
 <style>{PAGE_CSS}</style>
 <div class="wrap">
 <h1>{esc(args.title)}</h1>
-<p class="sub">Real Hampi palm-leaf lines, segmented with Palmira and read by the project's
-CRNN. Each line is shown twice: once as <strong>argmax</strong> commits to it, and once as the
-<strong>soft bridge</strong> passes it on, carrying the readings the recogniser was still
-weighing.</p>
+<p class="sub">{lede}</p>
 
-<div class="note">
-<strong>What this does and does not show.</strong> The recogniser was adapted on other lines of
-these same pages, so this demonstrates adaptation to a known hand, not generalisation to unseen
-manuscripts &mdash; on held-out <em>pages</em> it reads at 0.71 CER. Lines marked
-&ldquo;held out&rdquo; were kept out of training; lines marked &ldquo;seen in training&rdquo; were
-not. Accuracy is measured against <strong>machine labels from a vision model, not human ground
-truth</strong>. The modernizer here is an LLM, not the project's own model, which is a documented
-negative result. The quantified bridge claim is the frame-level one: on frozen-test frames where
-the top-1 was wrong, the correct symbol was still in the top-5 <strong>80.6%</strong> of the time.
-</div>
+<div class="note">{note}</div>
 
 <div class="stats">{"".join(f'<div class="stat"><span class="v">{esc(v)}</span><span class="k">{esc(k)}</span></div>' for v, k in stats)}</div>
 
-{"".join(render_line(e, not args.hide_truth) for e in entries)}
+{"".join(render_line(e, not args.hide_truth, args.max_image_width) for e in entries)}
 
 <footer>
 Checkpoint <code>{esc(Path(config["checkpoint"]).parent.name)}</code> &middot;

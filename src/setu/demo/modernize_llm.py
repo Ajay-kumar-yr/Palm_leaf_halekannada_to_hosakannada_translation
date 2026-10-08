@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
+import urllib.error
 from pathlib import Path
 
 from setu.label.vlm_label import KeyRing, collect_keys, load_env, _post
@@ -82,13 +84,44 @@ def modernize(text_block: str, branch: str, model: str, cache_dir: Path,
         )
     if ring is None:
         ring = KeyRing(collect_keys(load_env(REPO_ROOT / ".env"), "GEMINI_API_KEY"))
-    kname, key = ring.current()
-    d = _post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-        {"x-goog-api-key": key},
-        {"contents": [{"parts": [{"text": prompt}]}],
-         "generationConfig": {"temperature": 0}},
-    )
+
+    # Same quota handling as the labeller: a daily limit is per key, so
+    # rotate rather than wait it out; a rate limit is worth a short
+    # backoff. Without this a single 429 aborts the whole demo build.
+    last_error = None
+    for attempt in range(6):
+        try:
+            kname, key = ring.current()
+        except RuntimeError as e:
+            raise RuntimeError(f"all keys exhausted while modernizing: {e}") from e
+        try:
+            d = _post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                {"x-goog-api-key": key},
+                {"contents": [{"parts": [{"text": prompt}]}],
+                 "generationConfig": {"temperature": 0}},
+            )
+            break
+        except urllib.error.HTTPError as e:
+            body = e.read()[:300].decode(errors="replace")
+            last_error = f"HTTP {e.code}: {body}"
+            if e.code == 429:
+                if "PerDay" in body or "per day" in body.lower():
+                    ring.retire(kname)
+                else:
+                    ring.advance()
+                    time.sleep(min(30, 5 * 2 ** attempt))
+                continue
+            if e.code in (500, 502, 503):
+                time.sleep(min(30, 5 * 2 ** attempt))
+                continue
+            raise
+        except (TimeoutError, urllib.error.URLError) as e:
+            last_error = f"{type(e).__name__}: {e}"
+            continue
+    else:
+        raise RuntimeError(f"modernize failed after retries: {last_error}")
+
     cands = d.get("candidates") or []
     if not cands:
         raise RuntimeError(f"no candidates: {json.dumps(d)[:300]}")

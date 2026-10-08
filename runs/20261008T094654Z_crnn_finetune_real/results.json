@@ -1,0 +1,268 @@
+{
+  "best_real_val_cer": 0.7111858234448167,
+  "final_s1_val_cer": 0.0033,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.2342,
+      "real_val_cer": 0.7841,
+      "s1_val_cer": 0.0029,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 26.3,
+      "saved": true
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.1594,
+      "real_val_cer": 0.7822,
+      "s1_val_cer": 0.0029,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.9,
+      "saved": true
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.1393,
+      "real_val_cer": 0.7778,
+      "s1_val_cer": 0.0032,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.0,
+      "saved": true
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.1163,
+      "real_val_cer": 0.7794,
+      "s1_val_cer": 0.0036,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.1
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.1146,
+      "real_val_cer": 0.767,
+      "s1_val_cer": 0.0035,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.7,
+      "saved": true
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.1109,
+      "real_val_cer": 0.7702,
+      "s1_val_cer": 0.0031,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.7
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.0899,
+      "real_val_cer": 0.7792,
+      "s1_val_cer": 0.0033,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.9
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.0784,
+      "real_val_cer": 0.766,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.0,
+      "saved": true
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.0596,
+      "real_val_cer": 0.7656,
+      "s1_val_cer": 0.0033,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 23.9,
+      "saved": true
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.0655,
+      "real_val_cer": 0.7572,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 23.5,
+      "saved": true
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.0912,
+      "real_val_cer": 0.7591,
+      "s1_val_cer": 0.0035,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.8
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.0354,
+      "real_val_cer": 0.756,
+      "s1_val_cer": 0.0036,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.4,
+      "saved": true
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.0356,
+      "real_val_cer": 0.7379,
+      "s1_val_cer": 0.0032,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.6,
+      "saved": true
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.0498,
+      "real_val_cer": 0.7308,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.0,
+      "saved": true
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.0552,
+      "real_val_cer": 0.7517,
+      "s1_val_cer": 0.0036,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.9
+    },
+    {
+      "epoch": 16,
+      "train_loss": 0.0299,
+      "real_val_cer": 0.7308,
+      "s1_val_cer": 0.0036,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.0
+    },
+    {
+      "epoch": 17,
+      "train_loss": 0.0758,
+      "real_val_cer": 0.7512,
+      "s1_val_cer": 0.0035,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.9
+    },
+    {
+      "epoch": 18,
+      "train_loss": 0.0504,
+      "real_val_cer": 0.7376,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.1
+    },
+    {
+      "epoch": 19,
+      "train_loss": 0.0767,
+      "real_val_cer": 0.7222,
+      "s1_val_cer": 0.0033,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.5,
+      "saved": true
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.0565,
+      "real_val_cer": 0.7478,
+      "s1_val_cer": 0.0034,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 25.1
+    },
+    {
+      "epoch": 21,
+      "train_loss": 0.035,
+      "real_val_cer": 0.7112,
+      "s1_val_cer": 0.0037,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.9,
+      "saved": true
+    },
+    {
+      "epoch": 22,
+      "train_loss": 0.0364,
+      "real_val_cer": 0.7328,
+      "s1_val_cer": 0.0035,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.9
+    },
+    {
+      "epoch": 23,
+      "train_loss": 0.0557,
+      "real_val_cer": 0.7131,
+      "s1_val_cer": 0.0037,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.9
+    },
+    {
+      "epoch": 24,
+      "train_loss": 0.0657,
+      "real_val_cer": 0.7293,
+      "s1_val_cer": 0.0036,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 23.9
+    },
+    {
+      "epoch": 25,
+      "train_loss": 0.0315,
+      "real_val_cer": 0.721,
+      "s1_val_cer": 0.0033,
+      "steps": 58,
+      "skipped": 0,
+      "seconds": 24.2
+    }
+  ],
+  "n_real_train": 52,
+  "n_real_val": 16,
+  "samples": [
+    {
+      "ref": "॥ ಬೆರಳಿಚಿಪಕಮುರಿದ। ತನಗಂದನಬಿಷ್ಟುಅನಿಗೆ",
+      "hyp": "॥ ರಳಮರಅರಕಾರದನಬಿರರವರ"
+    },
+    {
+      "ref": "॥ ಗಕೇಳಮ । ಕಾಯ್೯ಆಗದು ಶಾನಿ । ರೋಗದಲ್ಲಿ । ತೀರಗಿ",
+      "hyp": "ಅನರವರರಅರ ಅಗವರವಅವ"
+    },
+    {
+      "ref": "॥ ಲ್ಲಿ । ಕೇಳಿದರ । ಪ್ರಿಣವತಾಮಸವೃ । ರವಿನಲ್ಲಿ ಕೇಳಿ",
+      "hyp": "ಅನವಕಅರರ್ವಅವರನರನವಕಲಿವರ"
+    },
+    {
+      "ref": "॥ ದನಬಿದಸಕೊಂಬುಳು। ಕದತಷಿಡಾದುಬಂದರಪ್ರವತಿ",
+      "hyp": "॥ ವರಲದನಕರಿನಮವಡಅರಗರಅವೆ"
+    },
+    {
+      "ref": "॥ ದವ್ಯಾದಿತುಚೆಮದು ॥ ಶುಕ್ರನಲ್ಲಿ ಕೇಳಿದರೆ ಪೋದಶ್ಯಾ",
+      "hyp": "ಅವಅರವಚಅವಅಅಅರಲರಲದರಮಳದವ"
+    }
+  ],
+  "caveat": "real_val_cer is measured against machine labels, not human ground truth"
+}

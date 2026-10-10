@@ -327,6 +327,9 @@ def main() -> None:
     p.add_argument("--split", default="holdout", choices=["holdout", "train", "all"])
     p.add_argument("--max-image-width", type=int, default=1500)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--title", default="Manuscript Transcription",
+                   help="each line set gets its own artifact, and its own shared store; "
+                        "a distinct title is what keeps them apart")
     args = p.parse_args()
 
     rows = []
@@ -365,11 +368,11 @@ def main() -> None:
   </div>
 </section>""")
 
-    html = f"""<title>Manuscript Transcription</title>
+    html = f"""<title>{args.title}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400&family=Noto+Serif+Kannada:wght@400&display=swap">
 <style>{CSS}</style>
 <div class="wrap">
-<h1>Manuscript Transcription</h1>
+<h1>{args.title}</h1>
 <p class="sub">{len(rows)} palm-leaf lines, held out from training. These are the lines every
 accuracy number is measured against &mdash; right now against a vision model's reading, which
 nothing has checked. Your transcriptions become the ground truth.</p>

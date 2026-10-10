@@ -16,8 +16,30 @@ cd ~/Palmira                       # it needs configs/, pretrained/, predictor.p
 python -u /mnt/d/major_proj/Palm_leaf_halekannada_to_hosakannada_translation/data/raw_corpus/palmira_worker.py
 ```
 
-Wait for `ready (pid …)`. The app checks
-`data/demo_jobs/worker_ready` and will tell you if it is missing.
+**Wait for `ready (pid …)` before starting the app.** Palmira takes
+~40 s to load, and the app prints its worker banner once, at startup:
+start them together and it says `NOT running` for the rest of the
+session even though the real route works fine. The banner is a snapshot,
+not a status line — `worker_alive()` is re-checked per job.
+
+The app verifies `data/demo_jobs/worker_ready` **and that the pid in it
+is alive**. Nothing deletes that file when the worker dies, so before
+this check a worker killed yesterday was still reported as running, and
+the real route would accept a job, wait out its 180 s timeout and fail
+— after telling you the worker was up. If you kill the worker by hand,
+delete `data/demo_jobs/worker_ready` too.
+
+Two launcher scripts in the repo root do all of this, and matter for a
+reason that is not obvious: **the worker and app must not be detached**
+with `nohup`/`setsid`. When the launching command exits and nothing else
+is running in the distro, WSL shuts the whole instance down a few
+seconds later and takes the process with it — a 0-byte log and no
+process, which looks exactly like a crash.
+
+```bash
+bash .launch_worker.sh    # hold this terminal open
+bash .launch_app.sh       # and this one
+```
 
 ## 2. The app (setu-venv, Python 3.14)
 
@@ -61,10 +83,10 @@ The two routes are not the same claim, and the page says so:
   the project's contribution, and where the recogniser actually works
   (1.53% CER). 80.6% of wrong top-1 frames still hold the correct
   symbol in the top-5.
-- **Real** — our recogniser cannot read real crops (0.687 CER), so the
+- **Real** — our recogniser cannot read real crops (0.696 CER), so the
   reading is done by a vision model and the uncertainty comes from
   disagreement between repeated reads. Same principle, different
-  mechanism, and weaker: 34.2% recovery.
+  mechanism, and weaker: 26.0% recovery.
 
 Do not let the real route be described as "our system reads
 manuscripts". It does not. What it shows is the pipeline and the

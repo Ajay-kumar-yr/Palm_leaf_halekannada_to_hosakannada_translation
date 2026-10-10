@@ -1,0 +1,14 @@
+{
+  "seed": 0,
+  "labels": "data\\real_lines\\gold\\recovery_lines.jsonl",
+  "split": "all",
+  "n_lines": 16,
+  "samples": 5,
+  "temperature": 0.8,
+  "input": "photo crop (grayscale)",
+  "agree_below": 1.0,
+  "model": "gemini-3.5-flash",
+  "llm_model": null,
+  "uncertainty_source": "ENSEMBLE over repeated vision-model readings at non-zero temperature -- NOT the CTC soft bridge. The mechanism differs; the claim (collapsing early discards usable information) is the same. The quantified bridge result stays the frame-level measurement on synthetic data.",
+  "consensus": "medoid reading; per-character votes by Levenshtein alignment, not position"
+}

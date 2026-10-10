@@ -1,0 +1,10 @@
+{
+  "seed": 0,
+  "cache_dir": "runs/20261009T120133Z_cache_s2_recogniser",
+  "temperature": 1.5,
+  "top_k": 5,
+  "test_only": true,
+  "n_lines_scanned": 1358,
+  "alignment": "CTC forced alignment (Viterbi) against ground-truth old text",
+  "claim": "information survives the interface; NOT 'the bridge fixed the error'"
+}

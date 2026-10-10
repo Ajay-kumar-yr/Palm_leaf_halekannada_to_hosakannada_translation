@@ -1,0 +1,8 @@
+{
+  "n_lines": 3500,
+  "n_test_lines": 1358,
+  "total_frames": 1782286,
+  "logprobs_bytes": 406361336,
+  "mean_cer_vs_s2_ground_truth": 0.014648617890563036,
+  "n_cpu_fallback": 0
+}

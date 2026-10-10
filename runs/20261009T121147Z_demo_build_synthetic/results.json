@@ -1,0 +1,13 @@
+{
+  "n_lines": 8,
+  "n_heldout": 8,
+  "n_candidate_recovery_lines": 312,
+  "mean_cer_vs_machine_label": 0.004067253960786267,
+  "cer_is_true_ground_truth": true,
+  "mean_fraction_uncertain": 0.022298657518554664,
+  "n_lines_with_uncertain_chars": 8,
+  "total_argmax_substitutions": 8,
+  "total_recoverable": 8,
+  "n_branches_differ": null,
+  "n_llm_calls_made": 0
+}

@@ -1,0 +1,15 @@
+{
+  "seed": 0,
+  "checkpoint": "runs/20261006T120718Z_crnn_train_s1/best_model.pt",
+  "manifest": "data/s2/manifest.jsonl",
+  "meta": "data/raw_corpus/s2_corpus_render_meta.jsonl",
+  "n_lines": 3500,
+  "n_test_lines": 1358,
+  "total_frames": 1782286,
+  "num_classes": 57,
+  "dtype": "float32",
+  "augment": false,
+  "batch_size": 1,
+  "device": "cuda",
+  "stores": "full per-frame distributions (not top-5) -- blank-drop needs the full-vocab softmax at tuned temperatures, see module docstring"
+}

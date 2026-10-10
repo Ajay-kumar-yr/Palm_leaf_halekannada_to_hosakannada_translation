@@ -56,3 +56,19 @@ data/glyph_bank_bin/
 data/glyph_bank_unet/
 data/s1_sample/
 MANIFEST.sha256
+
+# Demo staging: copies of images already in the repo or regenerable,
+# assembled by setu.demo.stage_demo_inputs.
+demo_inputs/
+
+# App and worker logs from the WSL launchers.
+.app.log
+.worker.log
+
+# One-off runner scripts and their logs, written per session. The two
+# launchers are committed because DEMO_RUNBOOK.md tells you to use them.
+.run_*.sh
+.verify_*.sh
+.cache_run.log
+.recov_run.log
+.dsyn_run.log

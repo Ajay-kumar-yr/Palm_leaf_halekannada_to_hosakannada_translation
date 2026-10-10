@@ -16,18 +16,23 @@ Nothing here is quoted from memory — each row names a run folder, and
 |---|---|---|---|
 | 1 | Recogniser CER, frozen synthetic test (1,358 lines) | **1.53%** | `20261007T151916Z_eval_b0_b3_b4` |
 | 2 | Recogniser CER, S1 validation | 0.39% | `20261006T120718Z_crnn_train_s1` |
-| 3 | **Soft bridge, frame level** — wrong top-1 frames where the correct symbol survived in the top-5 | **80.6%** (2,907 / 3,607) | `20261008T033215Z_recovery_examples` |
+| 3 | **Soft bridge, frame level** — wrong top-1 frames where the correct symbol survived in the top-5 | **80.6%** desktop renders (2,907 / 3,607) · **76.0%** local renders (2,980 / 3,919) | `20261008T033215Z_recovery_examples`, `20261009T121104Z_recovery_examples` |
+| 3b | Recogniser CER over S2, same checkpoint, two renders | 1.53% desktop · **1.46%** local | `20261009T120133Z_cache_s2_recogniser` |
 | 4 | Weight the bridge puts on that correct symbol / argmax puts | 0.200 / **0.000** | same |
 | 5 | Palmira line segmentation | 96.9% of 738 photos; **97.2%** of 568 distinct pages | `data/raw_corpus/palmira_survey_results.jsonl` |
 | 6 | Domain gap, mean top-1 confidence: synthetic → real | **0.9613 → 0.6265** | `20261008T061052Z_real_vs_synthetic_confidence` |
 | 7 | Lines flagged by confidence: synthetic → real | 1.8% → **100%** | same |
 | 8 | Domain gap decomposition: texture / letter shape | **6% / 94%** | `20261008T141042Z_real_vs_synthetic_confidence` |
-| 9 | CRNN on real lines, true CER vs human transcription | **0.687** | `20261008T130753Z_gold_real_eval` |
-| 10 | Vision-model labels vs human transcription | **0.370** (0.389 before the ಶ/ಕ correction) | `20261008T150323Z_gold_fix_sha_ka` |
+| 9 | CRNN on real lines, true CER vs human transcription | **0.696** (16 reportable lines; 0.687 over all 32) | `20261009T105420Z_gold_real_eval` |
+| 9b | Same, grayscale photo crop instead of binarized input | 0.693 — **binarization changes nothing** | `20261009T105426Z_gold_real_eval` |
+| 10 | Vision-model labels vs human transcription | **0.370** (0.389 before the ಶ/ಕ correction); 0.372 on the 16 reportable lines | `20261008T150323Z_gold_fix_sha_ka`, `20261009T105420Z_gold_real_eval` |
 | 11 | Archaic ಱ in 32 real lines: human / machine | **6 (in 4 lines) / 0** | `20261008T130753Z_gold_real_eval` |
 | 12 | Data scaling: 13 / 52 / 105 labelled lines | 0.756 / 0.719 / **0.700** CER | `20261008T1026–1048Z_crnn_finetune_real` |
-| 13 | **Real-crop recovery** — consensus-wrong characters where some sample held the right one | **34.2%** (25 / 73) | `20261008T152006Z_real_recovery` |
+| 13 | **Real-crop recovery** — consensus-wrong characters where some sample held the right one | **26.0%** (38 / 146), all 16 reportable lines, 5 reads each, `gemini-3.5-flash` | `20261010T075245Z_real_recovery` |
+| 13a | Same, 13 of those lines (superseded by the fuller set, not withdrawn) | 27.8% (35 / 126) | `20261009T112249Z_real_recovery` |
+| 13b | Same, withdrawn: 6 demo-page lines at flash-lite (**broke rule 8**, §6a) | ~~34.2%~~ (25 / 73) | `20261008T152006Z_real_recovery` |
 | 14 | Build B branch divergence | 5 of 6 lines | `20261008T151237Z_demo_build_real` |
+| 16 | Vision-model sample disagreement: flash-lite → 3.5-flash | 0.379 → **0.163** | `20261009T105809Z_demo_build_real` |
 | 15 | Fake-vs-real classifier | 68.8% | `20261006T153251Z_fake_vs_real_classifier` |
 
 ---
@@ -71,25 +76,53 @@ times at temperature 0.8 and treat disagreement between samples as the
 uncertainty. B3 takes the consensus string alone; B4 takes it plus the
 alternatives and their frequencies.
 
-Scored against the human transcriptions:
+Scored against the human transcriptions, on all 16 lines that may be
+reported at all (§6a), 5 reads each:
 
 | | |
 |---|---|
-| characters the consensus read wrong | 73 |
-| …where at least one sample held the right one | **25 (34.2%)** |
+| characters the consensus read wrong | 146 |
+| …where at least one sample held the right one | **38 (26.0%)** |
 | synthetic CTC top-5 equivalent | 80.6% |
 
-**The principle transfers, but weakly.** A third of the consensus's
-errors are recoverable from what B4 carries and B3 discards — against
-zero for argmax by construction — but less than half the rate the CTC
-bridge achieves where the recogniser is competent.
+Measured first on 13 of the 16 at 27.8% and then on all 16 at 26.0%,
+so the figure is stable against adding a quarter more lines. Completing
+a 16th line's missing 5th read left it at 38 / 146 unchanged.
 
-**Why, and this is worth reporting:** a confident vision model tends to
-be **wrong the same way five times**. Its sampling errors are
-correlated. A CTC posterior is per-frame and genuinely brackets the
-truth; an LLM ensemble mostly does not. That is an argument *for* the
-project's own design choice, arrived at by measurement rather than
-assertion.
+**The principle transfers, but weakly.** About a quarter of the
+consensus's errors are recoverable from what B4 carries and B3 discards
+— against zero for argmax by construction — but barely a third of the
+rate the CTC bridge achieves where the recogniser is competent.
+
+### A better reader made the ensemble *worse* at bracketing the truth
+
+The withdrawn figure (row 13b) read the crops with `flash-lite`; this
+one uses `gemini-3.5-flash`, which reads measurably better (0.370 CER
+against 0.428). The better reader produced a **lower** recovery rate:
+
+| | flash-lite | 3.5-flash |
+|---|---|---|
+| mean sample disagreement | 0.379 | **0.163** |
+| mean fraction of characters contested | 0.528 | **0.246** |
+| recovery | 34.2% | **26.0%** (16 lines; 27.8% on the first 13) |
+
+DEMO_PLAN.md §6a predicted that if the figure held near 34% the
+correlated-error explanation was confirmed. It fell, which points the
+same way harder, and is the sharper result: **as the reader gets more
+confident, the pile B4 carries gets smaller faster than it gets more
+accurate.** A confident vision model is **wrong the same way five
+times** — its sampling errors are correlated, and confidently-wrong is
+exactly the failure an ensemble cannot see. A CTC posterior is
+per-frame and brackets the truth even where the top-1 is wrong; an LLM
+ensemble mostly does not.
+
+That is an argument *for* the project's own design choice, arrived at by
+measurement rather than assertion — and it is the honest reason the real
+route is the weaker half of the demo. The two figures are not a clean
+A/B (the line sets differ too, because the first was not reportable),
+but they move in the opposite direction to the one a "better reader
+helps everything" account predicts, and the disagreement collapse of
+0.379 → 0.163 is the mechanism.
 
 **What this is not:** it is an ensemble over a borrowed recogniser, not
 the CTC soft bridge. Same claim, different mechanism, and the report
@@ -137,7 +170,7 @@ time is ~450 lines, predicting 0.66.
 Two honest caveats. The curve was measured with labels later shown to
 be ~37% wrong, so it understates what clean labels might achieve. And
 three points cannot prove nothing lies further along. But the model's
-error (0.687) sits far above the label-noise floor (0.370), so the model
+error (0.696) sits far above the label-noise floor (0.372), so the model
 is the binding constraint, and clean labels at that scale would need
 human transcription of thousands of lines — the very bottleneck that
 made machine labelling necessary.
@@ -194,9 +227,9 @@ own error rate — as the ಶ/ಕ correction itself demonstrates.
 
 | Claimed | Not claimed |
 |---|---|
-| The recogniser reads *synthetic* old-Kannada lines at 1.53% CER | That it reads real manuscripts (it does not: 0.687) |
+| The recogniser reads *synthetic* old-Kannada lines at 1.53% CER | That it reads real manuscripts (it does not: 0.696) |
 | Information argmax discards survives the bridge — 80.6% of wrong frames | That the bridge produces a correct final answer |
-| The principle transfers to real crops at 34.2% | That this is the CTC soft bridge (it is an ensemble over a borrowed reader) |
+| The principle transfers to real crops at 26.0% | That this is the CTC soft bridge (it is an ensemble over a borrowed reader) |
 | 94% of the domain gap is letter shape | That preprocessing can close it |
 | Real manuscripts contain ಱ | That ೞ does (absent from these 32 lines) |
 | Machine labels are ~37% wrong | That the gold is error-free |
@@ -216,7 +249,7 @@ because the same traps are easy to fall into again.
 
 | Bug | Effect if unnoticed |
 |---|---|
-| Recovery scored against the display-capped list (10 contested chars/line) | Reported **9.6%** where the true figure is **34.2%** — under-reporting our own result 3.5× |
+| Recovery scored against the display-capped list (10 contested chars/line) | Reported **9.6%** where that run's true figure was **34.2%** — under-reporting our own result 3.5× (that run is itself withdrawn, §6a; the cap bug is not) |
 | Demo-line selection compared characters position-by-position | One insertion shifts everything after it: a line with 3 real errors showed 98 "errors" and ranked as a spectacular recovery |
 | Ranking recovery lines by raw count | Selected the *most broken* lines (0.58 CER), illegible either way |
 | `is not` used to filter identical sample strings | Python interns them, so a unanimously-read line reported as **maximally uncertain** |
@@ -224,6 +257,93 @@ because the same traps are easy to fall into again.
 | Quota detection read only the first 200 bytes of a 429 | The quota id sits further down, so daily exhaustion was misread as a rate limit |
 | Retry loop did not rotate keys on 503 | Hammered one unlucky key five times while others were free |
 | `nan < best` never true with no val set | An overfit run saved no checkpoint at all |
+| `cache_s2` caught `torch.cuda.OutOfMemoryError` but not the driver's plain `RuntimeError: CUDA driver error: out of memory` | The documented OOM-to-CPU fallback never fired, so one oversized line killed the whole 3,500-line pass on the 4GB laptop GPU. Invisible on the 12GB desktop |
+| `expandable_segments:True` allocator, set by seven modules | After an OOM plus `empty_cache()`, the next GPU forward dies in PyTorch's own allocator (`!handles_.at(i) INTERNAL ASSERT FAILED`). The demo app and pipeline set it too, on the same 4GB GPU |
+| `--no-live` gate computed a different cache key than the run functions stored under (missing `binarizer`, `resize`, `ckpt`) | `is_cached` was **always False**, so the mode the demo is meant to be presented in refused **every** image, including ones pre-cached minutes earlier. Live mode hid it completely: the run functions consult their own cache afterwards |
+| On a cache hit the UI passed `read_fn=None`, and `read=read_fn is not None` is part of the key | The gate probed one key and `run_real` then looked up another, replaying a readings-free entry from an old segmentation-only run: every line "0/0 characters uncertain", no modernizer, nothing on screen. Both now call one shared `real_key`/`synthetic_key` |
+| Running the real route with no reader **stores** an empty entry | A cache-only acceptance test polluted the cache with readings-free entries that would later replay in place of the good ones. Three were found and deleted |
+| CRNN forward is not bit-reproducible on this GPU | The same line gave 1/239 flagged characters one day and 5/238 the next, and `line_000131` went 1/270 -> 0/270, i.e. from a demonstration to a blank. Flagging at a 0.9 threshold sits close to the numerical noise, so any reported flagged-count must name its run |
+| Hand transcription written into the labels file's `text` field | Everything downstream reads `text` as the *machine* label, so `gold_real` scored the gold against itself and reported the vision model's labels as **97% accurate** (CER 0.028) where the true figure is **0.372** |
+| `sample_readings` caught `URLError` but not bare `ConnectionResetError` | One reset from Google's edge killed a 16-line run at line 4 and discarded ~17 readings already paid for out of a 100-call day. Readings are now cached per crop, so a crash or a rerun costs nothing |
+| Real-crop recovery measured on `demo_pages/` lines | **Broke CLAUDE.md rule 8.** The 32 gold lines are 16 demo-page and 16 train-page lines, and the first recovery figure used 6 demo-page lines. See §6a |
+
+### 6b. The headline bridge figure is render-dependent (2026-10-09)
+
+S2 has been rendered at least **three** different ways across the two
+machines, and each has its own recogniser cache. The same line has a
+different width in each:
+
+| cache | lines | frames | `line_000599` |
+|---|---|---|---|
+| `20261007T022632Z` (desktop) | 3500 | 1,785,952 | 492 |
+| `20261007T143817Z` | 2075 | 956,078 | 413 |
+| `20261009T120133Z` (local) | 3500 | 1,782,286 | **468** |
+
+Every published synthetic number came from the first, whose images are
+**not on this laptop**. Re-running the identical pipeline on the local
+renders, same checkpoint, same temperature:
+
+| | desktop | local |
+|---|---|---|
+| recogniser CER over S2 | 1.53% | **1.46%** |
+| aligned non-blank frames | 383,427 | 382,520 |
+| frames with wrong top-1 | 3,607 | **3,919** |
+| …correct symbol still in top-5 | **80.6%** | **76.0%** |
+| mean bridge weight on it | 0.200 | **0.203** |
+
+So the claim is robust and the mechanism is stable (0.200 → 0.203), but
+the **specific percentage is a property of the render, not of the method
+alone**. Report it with the render named, or quote both. The honest
+default is the local figure, because it is the one whose images exist
+here and which reproduces live.
+
+**Consequence for the demo:** the six published worked examples cannot
+be shown live on this machine — on the local render of `line_000599`
+argmax reads ಮುಗ್ಧೆ correctly, so the documented error never appears.
+Eight replacements were selected from the local cache
+(`20261009T121147Z_demo_build_synthetic`) and each was replayed through
+`pipeline.run_synthetic`, the function the UI itself calls, matching
+slot and confidence to three decimals. Two show a **visible** word-level
+recovery:
+
+- `line_000859` — argmax **0.48** confident, committed to **ಬೀಗಿಯ**
+  (not a word); the bridge also held ದ್ at 0.253, giving **ಬೀದಿಯ**, the
+  ground truth. Only 1 of 239 characters flagged, so the line is
+  otherwise perfect.
+- `line_000282` — argmax **ಸಾದ್ಯವಿಲ್ಲಯ್ಯಾ**, truth
+  **ಸಾಧ್ಯವಿಲ್ಲಯ್ಯಾ**; the same aspirated ದ/ಧ confusion as the old
+  showcase.
+
+The other six have no visible error: `build_demo_synthetic` counts
+substitutions against the CTC-aligned **WX** reference, and most of
+those differences vanish once WX is converted back to Kannada script.
+They demonstrate a contested slot, not a fix.
+
+### 6a. Which real lines may be reported at all (2026-10-09)
+
+CLAUDE.md rule 8: `demo_pages/` is for the live demo and never appears
+in a reported number. The 32 hand-transcribed gold lines straddle that
+line, and nothing in their file said so:
+
+| pages | lines | status |
+|---|---|---|
+| `1.108`, `1.12`, `1.140` | 16 | train pages — **reportable** |
+| `group1_1.128`, `.198`, `.26`, `.28` | 16 | demo pages — demo only |
+
+The first real-crop recovery figure (34.2%, run
+`20261008T152006Z_real_recovery`) was computed on six lines, all from
+`group1_1.128` and `group1_1.198`. **It is withdrawn**, and recomputed
+on the reportable lines (row 13).
+
+`setu.eval.make_recovery_set` now builds that subset, names the four
+demo pages explicitly rather than guessing from a `group` prefix — the
+prefix is a manuscript group, not a set membership — and carries the
+machine label and the hand transcription in separate fields.
+
+The 16 reportable lines reproduce the headline label-quality figure
+(0.372 against 0.370 over all 32), so the subset is not a flattering
+one; the recogniser's true CER on them is 0.696 against 0.687 over all
+32, i.e. marginally *worse*.
 
 ---
 

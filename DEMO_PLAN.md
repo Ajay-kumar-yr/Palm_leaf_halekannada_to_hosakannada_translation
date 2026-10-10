@@ -6,8 +6,10 @@ disagree. Like `STATUS.md` it is session state, not a rules document;
 
 **Deadline: 2026-10-12. Feature freeze: end of 2026-10-11.**
 
-**Start at §6a** — the current plan. §1-5c are the record of how the
-approach got here, and §6 (Day 1-4) is superseded. Every number lives
+**Start at §6c** — the record of 2026-10-10 and what is left. §6b is
+2026-10-09. §6a was
+the plan for that day; §1-5c are the record of how the approach got
+here, and §6 (Day 1-4) is superseded. Every number lives
 in `RESULTS.md`; how to run the demo is in `DEMO_RUNBOOK.md`.
 
 ---
@@ -227,7 +229,7 @@ measurement on synthetic data (80.6%) remains the quantified result.
 | | |
 |---|---|
 | Synthetic bridge demo | published, true ground truth, 6 worked recoveries |
-| Build B on real crops | 34.2% recovery, 5 of 6 lines diverge |
+| Build B on real crops | ~~34.2%~~ — withdrawn under rule 8; **26.0%** on all 16 reportable lines (§6b) |
 | Web UI, both pipelines | built, tested end to end, `DEMO_RUNBOOK.md` |
 | All numbers | `RESULTS.md`, each with its run folder |
 | 32 hand transcriptions + ಶ/ಕ correction | machine labels measured at 0.370 |
@@ -295,9 +297,115 @@ Rehearse twice. Keep real buffer.
   `--no-live`.
 - Start the Palmira worker first and check `worker_ready`.
 - Do not describe the real route as "our system reads manuscripts".
-  It does not: 0.687 CER, and `RESULTS.md` §3 says why.
+  It does not: 0.696 CER, and `RESULTS.md` §3 says why.
 
+## 6b. What actually happened on 2026-10-09
 
+**Quota reset confirmed** — 5/5 keys live on `gemini-3.5-flash`
+(`setu.label.quota_check`, new). ~27 of the day's 100 went on probes and
+a crashed run; 65 on the measurement. Flash-lite is **untouched**: the
+demo pre-cache moved to 2026-10-10 at the user's call.
+
+**A rule 8 violation, found and fixed.** The 32 hand-transcribed gold
+lines are 16 train-page and 16 **demo-page** lines, and nothing said so.
+The 34.2% recovery figure was computed on six demo-page lines, so rule 8
+forbade reporting it. `setu.eval.make_recovery_set` now builds the
+reportable 16; see `RESULTS.md` §6a.
+
+**Recovery recomputed: 27.8%** (35/126 characters, 13 lines,
+`20261009T112249Z_real_recovery`). §6a asked what a better reader would
+do. It made the figure **worse**, and that is the result worth having:
+disagreement collapsed 0.379 → 0.163 while recovery fell only 34.2% →
+27.8%, so the better reader is not finding the right character more
+often in its spread — it is producing less spread to look in.
+Confidently-wrong is exactly what an ensemble cannot bracket, and a CTC
+posterior can. Argument for our own design, by measurement.
+
+**The binarization question is closed: it changes nothing.** The
+fine-tuned recogniser scores 0.696 on binarized input against 0.693 on
+grayscale (16 lines, `20261009T105420Z` / `...5426Z_gold_real_eval`).
+Binarizing helps the *vision model* and lifts the *original*
+checkpoint's confidence, but does not move the fine-tuned model's
+accuracy.
+
+**Transcription Set 2 is live** — 15 lines drawn seeded-random from the
+50-page sample set, no quality filter, max 2 per page, all four
+manuscript groups (`setu.eval.make_test_set`). Independent of the 32,
+which are entangled with the glyph bank and the scaling curve. Not yet
+transcribed.
+
+**Infrastructure, from today's two bugs:** readings are now cached per
+crop under `data/demo_cache/readings/`, and `sample_readings` catches
+bare `OSError`. A crash or a rerun no longer costs quota — topping the
+measurement up from 13 to 16 lines costs 15 calls, not 80.
+
+### The Act 2 decision — SETTLED (user, 2026-10-09)
+
+§6a said to judge whether the real route earns its place. **Decision:
+Act 2 is the ensemble on real crops, and only that.** Build B as
+described in §7a — read each crop N times at temperature, consensus for
+B3, consensus plus alternatives and frequencies for B4.
+
+An alternative was offered and **declined**: making Act 2 the
+label-free confidence contrast instead (our own CRNN's mean top-1
+falling 0.96 → 0.63 from synthetic to real, 1.8% of lines flagged
+against 100%, RESULTS.md rows 6–7). That stays available as a
+*finding* for the report and the viva, not as an act.
+
+What Act 2 therefore needs, and nothing else counts as ready:
+
+- the demo pages pre-cached through the UI, then `--no-live`;
+- the modernizer run on both branches for each shown line, so B3 and
+  B4 both display a modern reading rather than `—`;
+- the disclosure said out loud, unprompted: the reading is a vision
+  model, not our recogniser (0.696 CER on real crops); the uncertainty
+  is ensemble disagreement, not the CTC bridge; recovery is 26.0%
+  against the bridge's 80.6%.
+
+The supporting findings are the answer to "why is the real half
+weaker", asked or not: 94% of the gap is letter shape, the scaling
+curve puts a usable recogniser at ~200,000 lines, the vision model
+erases ಱ, and a better reader *lowers* ensemble recovery. Each is a
+measurement rather than an apology.
+
+## 6c. 2026-10-10 — Act 2 is cached and the demo passes under `--no-live`
+
+**Done.**
+
+- **Both demo pages pre-cached** at the settings the demo runs at (5
+  reads, 4 lines, modernizer on): `group1_1.128` and `group2_2.15`, 8
+  lines, every line read, both branches modernized, **branches differ
+  on all 8**. 41 reader calls, 16 modernizer calls.
+- **All 8 synthetic lines cached with the modernizer**, so Act 1 shows
+  modern Kannada rather than `—`. `line_000859` is the line to lead
+  with: B3's modern text keeps argmax's non-word **ಬೀಗಿಯ**, B4's gives
+  **ಬಾಗಿಲ** ("door"). Say it precisely — carrying the uncertainty
+  stopped a non-word propagating; it did not reconstruct the gold word
+  (ಬೀದಿಯ).
+- **Recovery finished on all 16 reportable lines: 26.0%** (38/146),
+  against 27.8% on the first 13, so it is stable (run
+  `20261010T075245Z_real_recovery`).
+- **`--no-live` acceptance test passes**: 10 staged files replay in
+  0.1–0.8 s with no empty lines and both branches modernized; the 3
+  uncached pages are refused; nothing broken.
+
+**Four bugs fixed, two of which would have ended the demo** (RESULTS.md
+§6): the `--no-live` gate computed a cache key that could never match,
+so it refused everything; and on a cache hit the UI changed the key by
+dropping `read_fn`, replaying a readings-free entry with nothing on
+screen. Also: a cache-only test stores empty entries that later replay
+(three deleted), and the CRNN forward is not bit-reproducible here, so
+flagged-character counts move between runs and must be read off the
+cache the demo will actually replay.
+
+### Still open
+
+1. The 15 transcriptions (Transcription Set 2 is published, store
+   empty) — needs a Kannada reader, then an independent real-line CER.
+2. Report sections, `RESULTS.md` as the spine.
+3. Rehearse twice. Start the worker and **wait for `ready (pid …)`**
+   before the app, or the banner lies for the rest of the session.
+4. Commit: today's and yesterday's work is still uncommitted.
 
 ### Day 1 (Oct 9) — labels + go/no-go
 - Cut ~600 training crops from pages **outside** the 14 demo pages and

@@ -12,9 +12,9 @@ Two pipelines, chosen by what is uploaded:
 The split is not cosmetic. On synthetic lines the uncertainty is our own
 recogniser's CTC posterior -- the project's actual contribution, where
 80.6% of wrong top-1 frames still hold the correct symbol. On real
-crops our recogniser cannot read at all (0.687 CER), so the same
+crops our recogniser cannot read at all (0.696 CER), so the same
 principle is shown with an ensemble over a borrowed reader, which
-recovers 34.2%. The page says so rather than blurring the two.
+recovers 26.0%. The page says so rather than blurring the two.
 
 Run it (WSL, setu-venv, with the Palmira worker running in its own
 conda env for the real path):
@@ -151,10 +151,13 @@ def process(image, route_choice, samples, temperature, max_lines, do_modernize,
     route = auto if route_choice == "auto" else route_choice
     note = f"detected **{auto}** ({why})" + ("" if route == auto else f" — overridden to **{route}**")
 
-    key_probe = P.image_key(path, path=route, n=int(samples), t=float(temperature),
-                            m=int(max_lines), read=True, modern=bool(do_modernize)) \
-        if route == "real" else \
-        P.image_key(path, path="synthetic", t=1.5, k=5, u=0.9, modern=bool(do_modernize))
+    # Same key the run functions store under -- never re-derived here,
+    # or the --no-live gate drifts out of agreement with the cache and
+    # refuses images that are sitting in it.
+    key_probe = (P.real_key(path, samples, temperature, max_lines,
+                            read=True, modern=bool(do_modernize))
+                 if route == "real" else
+                 P.synthetic_key(path, modern=bool(do_modernize)))
     is_cached = P.cached(key_probe) is not None
     if not is_cached and not ALLOW_LIVE:
         return ("This image is not cached and live calls are disabled. "
@@ -163,16 +166,23 @@ def process(image, route_choice, samples, temperature, max_lines, do_modernize,
     def tick(msg):
         progress(0.5, desc=msg)
 
+    # Build these ALWAYS, cached or not. They are closures -- constructing
+    # one reads .env and makes no API call -- and the cache key records
+    # whether they were supplied: `read=read_fn is not None`. Skipping them
+    # on a cache hit therefore made `run_real` look up a *different* key
+    # than the gate just probed, and replay a readings-free entry left over
+    # from a segmentation-only run: every line "0/0 characters uncertain",
+    # no modernizer, nothing to show. The gate decides whether a call is
+    # allowed; it must not also change the key.
     ring = None
     read_fn = modern_fn = None
-    if not is_cached:
-        if route == "real":
-            read_fn, ring = make_reader()
-        else:
-            from setu.label.vlm_label import KeyRing, collect_keys, load_env
-            ring = KeyRing(collect_keys(load_env(REPO_ROOT / ".env"), "GEMINI_API_KEY"))
-        if do_modernize:
-            modern_fn = make_modernizer(ring)
+    if route == "real":
+        read_fn, ring = make_reader()
+    else:
+        from setu.label.vlm_label import KeyRing, collect_keys, load_env
+        ring = KeyRing(collect_keys(load_env(REPO_ROOT / ".env"), "GEMINI_API_KEY"))
+    if do_modernize:
+        modern_fn = make_modernizer(ring)
 
     if route == "real":
         result = P.run_real(path, samples=int(samples), temperature=float(temperature),

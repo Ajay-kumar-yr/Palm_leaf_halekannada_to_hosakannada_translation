@@ -44,6 +44,7 @@ from __future__ import annotations
 import argparse
 import base64
 import collections
+import hashlib
 import json
 import statistics
 import time
@@ -59,6 +60,60 @@ SEED = 0  # CLAUDE.md rule 6
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 
+READING_CACHE = REPO_ROOT / "data" / "demo_cache" / "readings"
+
+
+def cache_path(crop: str, model: str, temperature: float) -> Path:
+    """One file per crop per reading setting.
+
+    Readings are the expensive thing in this project -- 20 requests per
+    key per day per model -- and before this cache existed a crash on
+    line 4 of 16 threw away the readings for lines 1-3 and the day's
+    budget with them (a ConnectionResetError, which `sample_readings`
+    did not catch). The prompt is part of the key: a reworded prompt is
+    a different reading, and replaying the old one under the new prompt
+    would be invisible.
+    """
+    tag = hashlib.sha256(PROMPT.encode()).hexdigest()[:8]
+    return (READING_CACHE / f"{model}_t{temperature}_{tag}" /
+            f"{crop.replace('/', '__').replace('.png', '')}.json")
+
+
+def load_cached(crop: str, model: str, temperature: float) -> list[dict]:
+    f = cache_path(crop, model, temperature)
+    if not f.exists():
+        return []
+    return json.loads(f.read_text(encoding="utf-8"))["readings"]
+
+
+def save_cached(crop: str, model: str, temperature: float, readings: list[dict]) -> None:
+    f = cache_path(crop, model, temperature)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({"crop": crop, "model": model, "temperature": temperature,
+                             "readings": readings}, ensure_ascii=False, indent=1),
+                 encoding="utf-8")
+
+
+def content_cache_path(png: bytes, model: str, temperature: float) -> Path:
+    """Readings cache keyed by the IMAGE BYTES, not by a crop name.
+
+    The crop-name cache below only helps `main()`. The demo UI reaches
+    `sample_readings` through `app.make_reader`, which has no crop id --
+    its crops are freshly cut by Palmira into `data/demo_work/<job>/`,
+    and the job directory is new every run, so a path-keyed cache would
+    never hit twice. Hashing the bytes is stable across jobs, across
+    callers and across re-segmentation of the same page.
+
+    This is what makes the demo pre-cache safe to interrupt: the
+    pipeline cache only stores a page once every line of it has been
+    read, so without this a crash on line 4 threw away the reads for
+    lines 1-3, and those are 20 of a 100-call day.
+    """
+    tag = hashlib.sha256(PROMPT.encode()).hexdigest()[:8]
+    digest = hashlib.sha256(png).hexdigest()[:24]
+    return READING_CACHE / f"by-content_{model}_t{temperature}_{tag}" / f"{digest}.json"
+
+
 def sample_readings(ring: KeyRing, model: str, png: bytes, n: int, temperature: float,
                     gap: float = 1.5) -> list[dict]:
     """n independent readings of one crop. Each is its own request: the
@@ -69,18 +124,36 @@ def sample_readings(ring: KeyRing, model: str, png: bytes, n: int, temperature: 
     crop otherwise trips the per-minute limit on the first image and the
     whole run dies before reading anything.
     """
+    # Replay whatever has already been paid for on these exact bytes at
+    # these exact settings, and only call out for the shortfall.
+    cache_file = content_cache_path(png, model, temperature)
     out = []
+    if cache_file.exists():
+        try:
+            out = json.loads(cache_file.read_text(encoding="utf-8"))["readings"]
+        except (OSError, ValueError, KeyError):
+            out = []   # a half-written cache file is not worth a crash
+        if len(out) >= n:
+            return out[:n]
+
+    def _persist() -> None:
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text(json.dumps({"model": model, "temperature": temperature,
+                                          "readings": out}, ensure_ascii=False, indent=1),
+                              encoding="utf-8")
+
     body = {"contents": [{"parts": [
         {"inline_data": {"mime_type": "image/png", "data": base64.b64encode(png).decode()}},
         {"text": PROMPT},
     ]}], "generationConfig": {"temperature": temperature}}
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    for _ in range(n):
+    for _ in range(n - len(out)):
         for attempt in range(5):
             try:
                 kname, key = ring.current()
             except RuntimeError:
-                return out  # every key spent; keep what we have
+                _persist()  # every key spent; keep what we have paid for
+                return out
             try:
                 d = _post(url, {"x-goog-api-key": key}, body)
             except urllib.error.HTTPError as e:
@@ -99,16 +172,27 @@ def sample_readings(ring: KeyRing, model: str, png: bytes, n: int, temperature: 
                     time.sleep(min(20, 2 * 2 ** attempt))
                     continue
                 raise
-            except (TimeoutError, urllib.error.URLError):
+            except OSError:
+                # Covers URLError and TimeoutError (both OSError) and the
+                # bare ConnectionResetError that Google's edge throws under
+                # load -- which was uncaught, so one reset killed a 16-line
+                # run at line 4 and spent the readings it had already paid
+                # for. Transient: back off and try the next key.
+                ring.advance()
+                time.sleep(min(20, 2 * 2 ** attempt))
                 continue
             cands = d.get("candidates") or []
             if cands:
                 parts = cands[0].get("content", {}).get("parts", [])
                 raw = "".join(p.get("text", "") for p in parts if not p.get("thought"))
                 out.append({"raw": raw, "text": clean(raw), "usage": d.get("usageMetadata")})
+                _persist()  # after every call, not at the end: a crash
+                            # between here and the last line of a page
+                            # would otherwise discard paid-for reads
             ring.advance()  # spread load across keys
             time.sleep(gap)
             break
+    _persist()
     return out
 
 
@@ -217,6 +301,8 @@ def main() -> None:
     p.add_argument("--model", default="gemini-3.5-flash")
     p.add_argument("--llm-model", default="gemini-3.5-flash")
     p.add_argument("--no-llm", action="store_true", help="sample readings only; skip modernization")
+    p.add_argument("--no-cache", action="store_true",
+                   help="ignore cached readings and call for every sample again")
     p.add_argument("--dry-run", action="store_true", help="print the call budget and exit")
     args = p.parse_args()
 
@@ -233,9 +319,16 @@ def main() -> None:
     if not rows:
         raise SystemExit("no lines selected")
 
-    reads = len(rows) * args.samples
+    # Price what is actually left to call, not the nominal total: with a
+    # warm cache most of a rerun is free, and a budget that ignores that
+    # is the reason a run gets postponed for quota it does not need.
+    cached = 0 if args.no_cache else sum(
+        min(len(load_cached(r["crop"], args.model, args.temperature)), args.samples)
+        for r in rows)
+    reads = len(rows) * args.samples - cached
     modern = 0 if args.no_llm else len(rows) * 2
-    print(f"{len(rows)} lines x {args.samples} readings = {reads} calls"
+    print(f"{len(rows)} lines x {args.samples} readings = {len(rows) * args.samples}; "
+          f"{cached} already cached -> {reads} reading calls"
           f"{'' if args.no_llm else f', + {modern} modernizer calls'} = {reads + modern} total")
     if args.dry_run:
         print("dry run - nothing called")
@@ -262,8 +355,25 @@ def main() -> None:
     out, n_calls = [], 0
     for i, r in enumerate(rows):
         png = (REPO_ROOT / r["image"]).read_bytes()
-        samples = sample_readings(ring, args.model, png, args.samples, args.temperature)
-        n_calls += len(samples)
+        samples = [] if args.no_cache else load_cached(r["crop"], args.model, args.temperature)
+        reused = len(samples)
+        if reused < args.samples:
+            fresh = sample_readings(ring, args.model, png, args.samples - reused,
+                                    args.temperature)
+            n_calls += len(fresh)
+            samples += fresh
+            save_cached(r["crop"], args.model, args.temperature, samples)
+        samples = samples[: args.samples]
+        if reused:
+            print(f"  [{i + 1}/{len(rows)}] {r['crop']}: {reused} reading(s) from cache")
+        if len(samples) < args.samples:
+            # Fewer samples is a smaller pile for B4 to carry, so a
+            # short-read line understates recovery against the lines
+            # beside it. Say so rather than average it in silently
+            # (CLAUDE.md rule 7); the readings are cached, so a rerun
+            # tomorrow tops it up for free.
+            print(f"  [{i + 1}/{len(rows)}] {r['crop']}: WARNING only {len(samples)} of "
+                  f"{args.samples} readings -- quota or network ran out")
         texts = [s["text"] for s in samples]
         base, slots = consensus(texts)
         if not base:
@@ -332,7 +442,14 @@ def main() -> None:
             "The recogniser here is a vision LLM, not the project's CRNN, which cannot read real "
             "crops (0.70 CER; see the data-scaling curve).",
             "The modernizer is an LLM, not the project's own model.",
-            "No ground truth: these lines have no human transcription yet, so no CER is reported.",
+            # Written when only demo lines had no transcription. It is
+            # false for a run over the gold lines, and a stale caveat in a
+            # results file is worse than none -- it would have this run
+            # claiming no ground truth exists for lines that have it.
+            ("No ground truth: these lines have no human transcription, so no CER is reported."
+             if not any(r.get("gold_text") for r in rows) else
+             "These lines have hand transcriptions; CER against them is measured separately by "
+             "setu.eval.real_recovery and setu.eval.gold_real, not here."),
         ],
     }
     finish_run(run_dir, results)

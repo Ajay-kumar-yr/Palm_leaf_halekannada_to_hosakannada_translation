@@ -11,7 +11,7 @@ point of showing both: on synthetic lines it is our own recogniser's
 CTC posterior (the project's actual contribution, 80.6% of wrong frames
 still hold the right symbol); on real crops our recogniser cannot read
 at all, so the same *principle* is shown with an ensemble over a
-borrowed reader, which recovers 34.2%. See RESULTS.md §2.
+borrowed reader, which recovers 26.0%. See RESULTS.md §2.
 
 **Caching is not an optimisation here, it is a safety requirement.**
 Free-tier quota is 20 requests per key per day per model; a demo that
@@ -79,6 +79,31 @@ def image_key(image_path: Path, **settings) -> str:
     return h.hexdigest()[:24]
 
 
+def real_key(image: Path, samples: int, temperature: float, max_lines: int,
+             read: bool, modern: bool) -> str:
+    """The cache key for the real route. ONE definition, used by both
+    `run_real` and the UI's `--no-live` gate.
+
+    It was two definitions, and they drifted: `binarizer` was added here
+    and not to the gate, `resize`/`ckpt` likewise for the synthetic key,
+    so the gate computed a key that could never match a stored one.
+    `is_cached` was therefore always False, and `--no-live` -- the mode
+    the demo is supposed to be presented in -- refused every image
+    including the ones just pre-cached. Live mode hid it, because the
+    run functions consult their own cache afterwards.
+    """
+    return image_key(image, path="real", n=int(samples), t=float(temperature),
+                     m=int(max_lines), read=read, modern=modern,
+                     binarizer="sajjan_unet")
+
+
+def synthetic_key(image: Path, temperature: float = 1.5, top_k: int = 5,
+                  uncertain_below: float = 0.9, modern: bool = False) -> str:
+    """The cache key for the synthetic route. See `real_key`."""
+    return image_key(image, path="synthetic", t=temperature, k=top_k, u=uncertain_below,
+                     modern=modern, resize=False, ckpt=CRNN_CKPT.parent.name)
+
+
 def cached(key: str) -> dict | None:
     f = CACHE / f"{key}.json"
     if f.exists():
@@ -99,7 +124,30 @@ def store(key: str, payload: dict) -> dict:
 # --------------------------------------------------------------------- Palmira
 
 def worker_alive() -> bool:
-    return WORKER_READY.exists()
+    """The ready file exists AND the process it names is still running.
+
+    The file is written once at startup and nothing removes it when the
+    worker dies or the machine reboots, so existence alone reported a
+    worker from the previous day as running. The real route then
+    accepted the job, waited out its 180s timeout and failed -- the
+    worst possible version of this, because the page had already told
+    the presenter the worker was up.
+
+    The pid is only meaningful on the host that wrote it; the app and
+    the worker both run inside WSL, which is the only supported way to
+    run the real route (DEMO_RUNBOOK.md). Where /proc is absent we fall
+    back to trusting the file rather than refusing to work.
+    """
+    if not WORKER_READY.exists():
+        return False
+    try:
+        pid = int(WORKER_READY.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return False
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return True
+    return (proc / str(pid)).exists()
 
 
 def segment_page(image: Path, timeout: float = 180.0) -> dict:
@@ -228,8 +276,8 @@ def run_synthetic(image: Path, temperature: float = 1.5, top_k: int = 5,
     # `resize` and the checkpoint belong in the key: both change the
     # answer, and leaving them out meant a fix to the resize behaviour
     # silently replayed the old, wrong result from cache.
-    key = image_key(image, path="synthetic", t=temperature, k=top_k, u=uncertain_below,
-                    modern=modernize_fn is not None, resize=False, ckpt=CRNN_CKPT.parent.name)
+    key = synthetic_key(image, temperature=temperature, top_k=top_k,
+                        uncertain_below=uncertain_below, modern=modernize_fn is not None)
     hit = cached(key)
     if hit:
         return hit
@@ -282,18 +330,17 @@ def run_real(image: Path, samples: int = 5, temperature: float = 0.8,
              progress=None) -> dict:
     """Palmira -> crops -> binarize -> LLM ensemble -> modernizer.
 
-    Our CRNN cannot read real crops (0.687 CER), so the reading is done
+    Our CRNN cannot read real crops (0.696 CER), so the reading is done
     by a vision model and the uncertainty comes from disagreement
     between repeated reads. Same claim as the soft bridge, different
-    mechanism -- and weaker: 34.2% recovery against the bridge's 80.6%
+    mechanism -- and weaker: 26.0% recovery against the bridge's 80.6%
     (RESULTS.md 2.2).
     """
     from setu.demo.build_demo_real import (
         annotated_block, consensus, uncertain_slots, variant_lines)
 
-    key = image_key(image, path="real", n=samples, t=temperature, m=max_lines,
-                    read=read_fn is not None, modern=modernize_fn is not None,
-                    binarizer="sajjan_unet")
+    key = real_key(image, samples, temperature, max_lines,
+                   read=read_fn is not None, modern=modernize_fn is not None)
     hit = cached(key)
     if hit:
         return hit
@@ -356,7 +403,7 @@ def run_real(image: Path, samples: int = 5, temperature: float = 0.8,
                  ["U-Net binarization", f"vision-model ensemble (x{samples})", "modernizer"],
         "uncertainty_source": "disagreement between repeated reads of a vision model -- NOT "
                               "the CTC soft bridge. Same claim, different mechanism, and "
-                              "weaker: 34.2% recovery against the bridge's 80.6% "
+                              "weaker: 26.0% recovery against the bridge's 80.6% "
                               "(RESULTS.md 2.2)",
         "palmira": {"tags": seg.get("tags"), "n_lines": seg.get("n_lines"),
                     "overlay": seg.get("overlay"), "image_size": seg.get("image_size")},

@@ -1,0 +1,15 @@
+{
+  "seed": 0,
+  "cache_dir": "runs/20261009T120133Z_cache_s2_recogniser",
+  "temperature": 1.5,
+  "uncertain_below": 0.9,
+  "top_k": 5,
+  "max_substitutions": 6,
+  "max_cer": 0.15,
+  "n_lines": 8,
+  "llm_model": null,
+  "checkpoint": "runs/20261006T120718Z_crnn_train_s1/best_model.pt",
+  "source": "synthetic S2 frozen test split -- TRUE ground truth, never trained on",
+  "selection": "ranked by characters where argmax is wrong but the correct symbol survives among the bridge's alternatives",
+  "modernizer": "an LLM, NOT the project's from-scratch modernizer (a measured negative result, STATUS.md 3.1)"
+}

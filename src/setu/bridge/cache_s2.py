@@ -190,7 +190,19 @@ def main() -> None:
             used_device = str(device)
             try:
                 log_probs = model(images.to(device))
-            except torch.cuda.OutOfMemoryError:
+            except (torch.cuda.OutOfMemoryError, RuntimeError) as exc:
+                # The allocator raises OutOfMemoryError, but when the
+                # *driver* cannot map the memory it comes through as a
+                # plain RuntimeError ("CUDA driver error: out of memory"
+                # from cuMemSetAccess). The fallback this module promises
+                # has to cover both, or one oversized line kills the whole
+                # pass -- which is what happened on the 4GB laptop GPU, at
+                # the first line, where the 12GB desktop never hit it.
+                # Anything that is not an out-of-memory condition must
+                # still fail loudly (CLAUDE.md rule 7).
+                if not isinstance(exc, torch.cuda.OutOfMemoryError) \
+                        and "out of memory" not in str(exc).lower():
+                    raise
                 torch.cuda.empty_cache()
                 if cpu_model is None:
                     cpu_model = CRNN()

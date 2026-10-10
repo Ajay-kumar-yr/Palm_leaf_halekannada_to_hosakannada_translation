@@ -1,0 +1,88 @@
+{
+  "n_lines": 13,
+  "consensus_wrong_chars": 126,
+  "recovered_in_some_sample": 35,
+  "recovery_rate": 0.2777777777777778,
+  "synthetic_ctc_top5_equivalent": 0.806,
+  "per_line": [
+    {
+      "crop": "1.108/line_03.png",
+      "consensus_wrong": 7,
+      "some_sample_right": 4,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.108/line_07.png",
+      "consensus_wrong": 4,
+      "some_sample_right": 1,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.108/line_13.png",
+      "consensus_wrong": 9,
+      "some_sample_right": 4,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.108/line_20.png",
+      "consensus_wrong": 9,
+      "some_sample_right": 2,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.108/line_24.png",
+      "consensus_wrong": 12,
+      "some_sample_right": 4,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.12/line_05.png",
+      "consensus_wrong": 9,
+      "some_sample_right": 0,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.12/line_09.png",
+      "consensus_wrong": 17,
+      "some_sample_right": 5,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.12/line_13.png",
+      "consensus_wrong": 14,
+      "some_sample_right": 3,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.12/line_17.png",
+      "consensus_wrong": 8,
+      "some_sample_right": 1,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.12/line_21.png",
+      "consensus_wrong": 10,
+      "some_sample_right": 2,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.12/line_25.png",
+      "consensus_wrong": 11,
+      "some_sample_right": 2,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.140/line_03.png",
+      "consensus_wrong": 10,
+      "some_sample_right": 5,
+      "n_samples": 5
+    },
+    {
+      "crop": "1.140/line_07.png",
+      "consensus_wrong": 6,
+      "some_sample_right": 2,
+      "n_samples": 5
+    }
+  ],
+  "caveat": "ensemble over repeated vision-model readings, not the CTC soft bridge; scored against a single blind human transcription by one reader."
+}

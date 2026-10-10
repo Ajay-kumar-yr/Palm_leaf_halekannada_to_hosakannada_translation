@@ -9,7 +9,7 @@ answer still in the pile that B4 carries forward and argmax throws away?
 Scored against the human transcriptions, over whichever demo lines have
 one. Uses the RAW samples rather than the display list in demo.json,
 which is capped at ten contested characters per line: measuring against
-that cap understated the result as 9.6% when it is 34.2%.
+that cap understated the result as 9.6% when it was 34.2% for that run.
 
 Usage:
     python -m setu.eval.real_recovery --run runs/<ts>_demo_build_real

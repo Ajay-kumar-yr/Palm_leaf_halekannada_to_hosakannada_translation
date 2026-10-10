@@ -72,3 +72,7 @@ demo_inputs/
 .cache_run.log
 .recov_run.log
 .dsyn_run.log
+
+# demo.sh's per-run logs.
+.demo_logs/
+.demo_sh.log

@@ -51,6 +51,46 @@ python -m setu.demo.app                 # http://127.0.0.1:7860
 python -m setu.demo.app --no-live       # refuse anything not already cached
 ```
 
+## Starting it, in short
+
+One command up, Ctrl+C down:
+
+```bash
+bash /mnt/d/major_proj/Palm_leaf_halekannada_to_hosakannada_translation/demo.sh --no-live
+```
+
+From a Windows terminal rather than a WSL shell, prefix it with
+`wsl -d Ubuntu -e`. Drop `--no-live` only if you intend to spend API
+quota on something not yet cached.
+
+`demo.sh` starts the Palmira worker, **waits** for it to report ready,
+then starts the app, prints the URL, and holds the terminal. Ctrl+C
+stops both and deletes the ready file. If either process dies on its
+own it says so and takes the other down, rather than leaving half a
+demo running. Logs go to `.demo_logs/`.
+
+It exists because three things have already gone wrong by hand:
+starting the app before Palmira finished loading (the worker banner
+then reads `NOT running` all session); detaching with `nohup`, which
+dies when WSL tears the distro down seconds later; and killing the
+worker without removing `data/demo_jobs/worker_ready`, after which the
+app trusts a corpse and the real route waits out its 180 s timeout.
+
+Then open <http://127.0.0.1:7860> and **pick from the "Demo file"
+dropdown** — do not upload the staged files. `gr.Image` re-encodes
+uploads to lossy webp (its `format` argument is ignored in Gradio 6),
+so an uploaded copy is a different image as far as the cache is
+concerned and `--no-live` will refuse it. The dropdown passes the
+file's real path, so it always hits. Upload is for ad-hoc images and
+needs live calls.
+
+The dropdown is read **at startup**: re-stage `demo_inputs/` and you
+must restart.
+
+To start the two halves by hand instead — useful when debugging one of
+them — `.launch_worker.sh` and `.launch_app.sh` do exactly one each,
+in that order, waiting for `ready (pid …)` in between.
+
 ## What it does
 
 Upload an image; the route is chosen from its shape and can be overridden.

@@ -87,32 +87,44 @@ CACHED_READS = 5
 # result is cached the demo is deterministic; re-cache and these change,
 # so re-read them from the cache if you ever clear it.
 LIVE = {
-    "line_000859": {"contested": "5/238", "lowest": 0.48, "rivals": 4,
-                    "fix": "B3 modern keeps ಬೀಗಿಯ (not a word); B4 modern gives ಬಾಗಿಲ (door)",
-                    "slug": "RECOVERY_B3-keeps-nonword_B4-gives-baagila"},
-    "line_000282": {"contested": "6/247", "lowest": 0.812, "rivals": 4,
-                    "fix": "ಸಾದ್ಯವಿಲ್ಲಯ್ಯಾ -> ಸಾಧ್ಯವಿಲ್ಲಯ್ಯಾ in the reading",
-                    "slug": "RECOVERY_argmax-wrote-saadya_truth-saadhya"},
-    "line_000508": {"contested": "1/257", "lowest": 0.65, "rivals": 4,
-                    "fix": None, "slug": "cleanest-1-flag_branches-still-differ"},
-    "line_000494": {"contested": "4/255", "lowest": 0.739, "rivals": 4,
-                    "fix": None, "slug": "4-flags_branches-differ"},
-    "line_000684": {"contested": "6/234", "lowest": 0.864, "rivals": 4,
-                    "fix": None, "slug": "6-flags_branches-differ"},
-    "line_000472": {"contested": "8/233", "lowest": 0.599, "rivals": 4,
-                    "fix": None, "slug": "8-flags_branches-differ"},
-    "line_000037": {"contested": "13/235", "lowest": 0.507, "rivals": 4,
-                    "fix": None, "slug": "13-flags_a-noisier-line"},
-    # Cached with NOTHING flagged and both branches identical, so it
-    # demonstrates nothing. Staged last and named so, for the same
-    # reason as before: better to know before opening it.
-    "line_000131": {"contested": "0/270", "lowest": None, "rivals": 0,
-                    "fix": None, "slug": "SKIP-nothing-flagged_branches-identical"},
+    # "err"  the one symbol argmax got wrong, verified against the frozen
+    #        S2 gold by setu.eval.verify_demo_lines; "held" is whether the
+    #        bridge still carried the gold symbol at that slot. It did on
+    #        all eight -- but see the selection caveat in the README: these
+    #        lines were CHOSEN for having a recoverable substitution.
+    # "seen" whether the error survives into the printed Kannada. Only two
+    #        do; the other six differ in WX only and render identically.
+    "line_000859": {"contested": "1/239", "lowest": 0.48, "rivals": 4, "held": True,
+                    "err": "ಗ್ @0.48 for gold ದ್ @0.253", "seen": True,
+                    "fix": "ಬೀಗಿಯ → ಬೀದಿಯ",
+                    "slug": "VISIBLE_argmax-0.48-beegiya_gold-beediya"},
+    "line_000282": {"contested": "8/248", "lowest": 0.812, "rivals": 4, "held": True,
+                    "err": "ದ್ @0.812 for gold ಧ್ @0.163", "seen": True,
+                    "fix": "ಸಾದ್ಯವಿಲ್ಲಯ್ಯಾ → ಸಾಧ್ಯವಿಲ್ಲಯ್ಯಾ",
+                    "slug": "VISIBLE_argmax-saadya_gold-saadhya"},
+    "line_000037": {"contested": "15/235", "lowest": 0.507, "rivals": 4, "held": True,
+                    "err": "ಎ @0.507 for gold ಅ @0.483", "seen": False,
+                    "fix": None, "slug": "coin-flip-0.507_held_not-printed"},
+    "line_000472": {"contested": "5/233", "lowest": 0.599, "rivals": 4, "held": True,
+                    "err": "ಅ @0.599 for gold ಎ @0.384", "seen": False,
+                    "fix": None, "slug": "argmax-0.599_held_not-printed"},
+    "line_000508": {"contested": "2/257", "lowest": 0.65, "rivals": 4, "held": True,
+                    "err": "ಎ @0.65 for gold ಅ @0.345", "seen": False,
+                    "fix": None, "slug": "argmax-0.65_held_not-printed"},
+    "line_000131": {"contested": "1/270", "lowest": 0.735, "rivals": 4, "held": True,
+                    "err": "ಎ @0.735 for gold ಅ @0.147", "seen": False,
+                    "fix": None, "slug": "argmax-0.735_held_not-printed"},
+    "line_000494": {"contested": "5/256", "lowest": 0.739, "rivals": 4, "held": True,
+                    "err": "ಎ @0.739 for gold ಅ @0.215", "seen": False,
+                    "fix": None, "slug": "argmax-0.739_held_not-printed"},
+    "line_000684": {"contested": "6/234", "lowest": 0.864, "rivals": 4, "held": True,
+                    "err": "ಅ @0.864 for gold ಎ @0.134", "seen": False,
+                    "fix": None, "slug": "argmax-0.864_held_not-printed"},
 }
 # Show order: the two recoveries first, then by how little noise sits
 # around the contested slots, and the blank one last.
-ORDER = ["line_000859", "line_000282", "line_000508", "line_000494",
-         "line_000684", "line_000472", "line_000037", "line_000131"]
+ORDER = ["line_000859", "line_000282", "line_000037", "line_000472",
+         "line_000508", "line_000131", "line_000494", "line_000684"]
 
 
 def stage_synthetic(out: Path) -> list[dict]:
@@ -224,51 +236,39 @@ def write_readme(root: Path, synth: list[dict], pages: list[dict], crops: list[d
         "ಮುಗ್ಹೆ → ಮುಗ್ಧೆ moment never appears. Show that one from the published",
         "viewer, as a measured result with its run folder.",
         "",
-        "| file | contested | closest slot | argmax → truth |",
-        "|---|---|---|---|",
+        "| file | contested | argmax | the one symbol argmax got wrong | printed? |",
+        "|---|---|---|---|---|",
     ]
-    for s in synth:
-        lv = s["live"]
-        low = "—" if lv["lowest"] is None else f"**{lv['lowest']:.3f}**"
-        fix = lv["fix"] or "*no visible error*"
-        lines += [f"| `{s['file']}` | {lv['contested']} | {low} | {fix} |"]
+    for s_ in synth:
+        lv = s_["live"]
+        low = "—" if lv["lowest"] is None else f"{lv['lowest']:.3f}"
+        seen = "**yes**" if lv["seen"] else "no"
+        lines += [f"| `{s_['file']}` | {lv['contested']} | {low} | {lv['err']} | {seen} |"]
     lines += [
         "",
-        "**Lead with `01_line_000859`. It is better than the example it",
-        "replaces.** One single character of 239 is flagged, so the line is",
-        "otherwise perfect and there is nowhere else to look — and at that one",
-        "character argmax is **0.48 confident**, under half, and commits anyway",
-        "to **ಬೀಗಿಯ**, which is not a word. The bridge also carried ದ್ at 0.253,",
-        "giving **ಬೀದಿಯ** — \"of the street\" — which is the ground truth.",
+        "**Every one of these eight lines has exactly one symbol argmax got",
+        "wrong, and on all eight the bridge still carried the gold symbol.**",
+        "Verified against the frozen S2 test-split gold by",
+        "`setu.eval.verify_demo_lines`, which also confirms all eight readings",
+        "are identical to the entries the demo replays.",
         "",
-        "`02_line_000282` is the natural second and the more familiar shape of",
-        "error: argmax wrote **ಸಾದ್ಯವಿಲ್ಲಯ್ಯಾ**, the truth is",
-        "**ಸಾಧ್ಯವಿಲ್ಲಯ್ಯಾ** (\"it is not possible\") — the same aspirated ದ/ಧ",
-        "confusion as the old showcase, on a word an examiner will recognise.",
+        "**Do not quote 8/8 as a result.** These lines were *selected* by",
+        "`build_demo_synthetic` for having a recoverable substitution, so the",
+        "100% is selection, not measurement. The honest unbiased figure is the",
+        "frame-level one: 76.0% on this machine's renders, 80.6% on the",
+        "desktop's (RESULTS.md 6b).",
         "",
-        "`03`–`07` show a contested slot where B4 keeps rivals and argmax does",
-        "not, and their two branches still produce different modern readings — but",
-        "argmax's Kannada already matches the gold, so there is no error to point",
-        "at. `08` is cached with nothing flagged at all and both branches",
-        "identical: it shows nothing, and is named so.",
+        "**Only the first two show the error in the printed Kannada.** The",
+        "other six differ in the WX romanisation only — argmax picks ಎ where",
+        "the gold is ಅ and the rendered syllable comes out the same — so there",
+        "is nothing on screen to point at. Show `01` and `02`; the rest are",
+        "there to demonstrate the mechanism, not a visible fix.",
         "",
-        "**The counts above come from the cache, not from a fresh run**, because",
-        "the CRNN forward is not bit-reproducible on this GPU: the same file gave",
-        "1/239 contested characters yesterday and 5/238 today, and `line_000131`",
-        "went from 1/270 to 0/270. Cached, the demo is deterministic. Clear the",
-        "cache and these numbers move.",
-        "",
-        "**The remaining lines have no visible error.** Argmax matches the gold",
-        "Kannada exactly; what they show is a contested slot where B4 keeps",
-        "rivals and argmax does not. `build_demo_synthetic` counted a",
-        "substitution for each because it compares WX symbols against the",
-        "CTC-aligned reference, and most of those differences disappear when WX",
-        "is converted back to Kannada script. Useful for showing the mechanism,",
-        "useless for showing a fix — so do not promise one over them.",
-        "",
-        "Say, and do not overstate: this shows the information **survived the",
-        "interface**. It does not show the bridge produced a correct final",
-        "answer (RESULTS.md 2.1).",
+        "`01_line_000859` is the clearest: argmax is **0.48** confident, under",
+        "half, and commits to **ಬೀಗಿಯ**, not a word; the bridge also carried ದ್",
+        "at 0.253, which is the gold **ಬೀದಿಯ** (\"of the street\"). Its B4",
+        "modern text gives ಬಾಗಿಲ (\"door\") — a real word where B3 keeps the",
+        "non-word, though not the gold word either. Say that precisely.",
         "",
         "## 02 — real manuscript pages",
         "",

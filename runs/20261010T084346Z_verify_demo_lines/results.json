@@ -1,0 +1,297 @@
+{
+  "n_lines": 8,
+  "argmax_wrong_symbols": 8,
+  "bridge_held_gold": 8,
+  "held_rate": 1.0,
+  "readings_matching_demo_cache": 8,
+  "per_line": [
+    {
+      "line_id": "line_000859",
+      "argmax_wrong_symbols": 1,
+      "bridge_held": 1,
+      "matches_demo_cache": true,
+      "n_flagged": 1,
+      "n_slots": 239,
+      "errors": [
+        {
+          "slot": 118,
+          "gold_symbol": "x",
+          "argmax_symbol": "g",
+          "argmax_confidence": 0.48,
+          "flagged_uncertain": true,
+          "bridge_held_it": true,
+          "alternatives": [
+            [
+              "ಗ್",
+              0.48
+            ],
+            [
+              "ದ್",
+              0.253
+            ],
+            [
+              "ರ್",
+              0.167
+            ],
+            [
+              "ಧ್",
+              0.087
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "line_id": "line_000282",
+      "argmax_wrong_symbols": 1,
+      "bridge_held": 1,
+      "matches_demo_cache": true,
+      "n_flagged": 8,
+      "n_slots": 248,
+      "errors": [
+        {
+          "slot": 69,
+          "gold_symbol": "X",
+          "argmax_symbol": "x",
+          "argmax_confidence": 0.812,
+          "flagged_uncertain": true,
+          "bridge_held_it": true,
+          "alternatives": [
+            [
+              "ದ್",
+              0.812
+            ],
+            [
+              "ಧ್",
+              0.163
+            ],
+            [
+              "ರ್",
+              0.001
+            ],
+            [
+              "ವ್",
+              0.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "line_id": "line_000508",
+      "argmax_wrong_symbols": 1,
+      "bridge_held": 1,
+      "matches_demo_cache": true,
+      "n_flagged": 2,
+      "n_slots": 257,
+      "errors": [
+        {
+          "slot": 143,
+          "gold_symbol": "a",
+          "argmax_symbol": "e",
+          "argmax_confidence": 0.65,
+          "flagged_uncertain": true,
+          "bridge_held_it": true,
+          "alternatives": [
+            [
+              "ಎ",
+              0.65
+            ],
+            [
+              "ಅ",
+              0.345
+            ],
+            [
+              "ಒ",
+              0.002
+            ],
+            [
+              "ಇ",
+              0.001
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "line_id": "line_000494",
+      "argmax_wrong_symbols": 1,
+      "bridge_held": 1,
+      "matches_demo_cache": true,
+      "n_flagged": 5,
+      "n_slots": 256,
+      "errors": [
+        {
+          "slot": 225,
+          "gold_symbol": "a",
+          "argmax_symbol": "e",
+          "argmax_confidence": 0.739,
+          "flagged_uncertain": true,
+          "bridge_held_it": true,
+          "alternatives": [
+            [
+              "ಎ",
+              0.739
+            ],
+            [
+              "ಅ",
+              0.215
+            ],
+            [
+              "ಇ",
+              0.004
+            ],
+            [
+              "ಏ",
+              0.001
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "line_id": "line_000684",
+      "argmax_wrong_symbols": 1,
+      "bridge_held": 1,
+      "matches_demo_cache": true,
+      "n_flagged": 6,
+      "n_slots": 234,
+      "errors": [
+        {
+          "slot": 28,
+          "gold_symbol": "e",
+          "argmax_symbol": "a",
+          "argmax_confidence": 0.864,
+          "flagged_uncertain": true,
+          "bridge_held_it": true,
+          "alternatives": [
+            [
+              "ಅ",
+              0.864
+            ],
+            [
+              "ಎ",
+              0.134
+            ],
+            [
+              "ಇ",
+              0.001
+            ],
+            [
+              "ಒ",
+              0.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "line_id": "line_000472",
+      "argmax_wrong_symbols": 1,
+      "bridge_held": 1,
+      "matches_demo_cache": true,
+      "n_flagged": 5,
+      "n_slots": 233,
+      "errors": [
+        {
+          "slot": 72,
+          "gold_symbol": "e",
+          "argmax_symbol": "a",
+          "argmax_confidence": 0.599,
+          "flagged_uncertain": true,
+          "bridge_held_it": true,
+          "alternatives": [
+            [
+              "ಅ",
+              0.599
+            ],
+            [
+              "ಎ",
+              0.384
+            ],
+            [
+              "ಇ",
+              0.01
+            ],
+            [
+              "ಆ",
+              0.001
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "line_id": "line_000037",
+      "argmax_wrong_symbols": 1,
+      "bridge_held": 1,
+      "matches_demo_cache": true,
+      "n_flagged": 15,
+      "n_slots": 235,
+      "errors": [
+        {
+          "slot": 193,
+          "gold_symbol": "a",
+          "argmax_symbol": "e",
+          "argmax_confidence": 0.507,
+          "flagged_uncertain": true,
+          "bridge_held_it": true,
+          "alternatives": [
+            [
+              "ಎ",
+              0.507
+            ],
+            [
+              "ಅ",
+              0.483
+            ],
+            [
+              "ಏ",
+              0.003
+            ],
+            [
+              "ಇ",
+              0.003
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "line_id": "line_000131",
+      "argmax_wrong_symbols": 1,
+      "bridge_held": 1,
+      "matches_demo_cache": true,
+      "n_flagged": 1,
+      "n_slots": 270,
+      "errors": [
+        {
+          "slot": 198,
+          "gold_symbol": "a",
+          "argmax_symbol": "e",
+          "argmax_confidence": 0.735,
+          "flagged_uncertain": true,
+          "bridge_held_it": true,
+          "alternatives": [
+            [
+              "ಎ",
+              0.735
+            ],
+            [
+              "ಅ",
+              0.147
+            ],
+            [
+              "ಷ್",
+              0.101
+            ],
+            [
+              "ಇ",
+              0.008
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

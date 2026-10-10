@@ -79,6 +79,14 @@ def image_key(image_path: Path, **settings) -> str:
     return h.hexdigest()[:24]
 
 
+# A picked file is read straight from disk, so its bytes are stable and
+# `image_key` is exact. Uploads still go through `gr.Image`, which
+# re-encodes to lossy webp (its `format` argument is not honoured in
+# Gradio 6), so an uploaded copy of a staged file is a DIFFERENT image
+# as far as the cache is concerned. That is why the demo picks files
+# rather than uploading them -- see `build()`.
+
+
 def real_key(image: Path, samples: int, temperature: float, max_lines: int,
              read: bool, modern: bool) -> str:
     """The cache key for the real route. ONE definition, used by both

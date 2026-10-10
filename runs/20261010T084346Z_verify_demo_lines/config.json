@@ -1,0 +1,17 @@
+{
+  "seed": 0,
+  "lines": [
+    "line_000859",
+    "line_000282",
+    "line_000508",
+    "line_000494",
+    "line_000684",
+    "line_000472",
+    "line_000037",
+    "line_000131"
+  ],
+  "gold": "data/s2/manifest.jsonl",
+  "images": "/mnt/d/major_proj/Palm_leaf_halekannada_to_hosakannada_translation/data/s2/images",
+  "claim": "per character: did argmax differ from the frozen-test gold, and was the gold symbol among the alternatives the bridge carried",
+  "not_verified": "the modernized text -- S2's modern_text is scholarly commentary, not a line-level modernization (STATUS.md 3.1)"
+}
